@@ -47,6 +47,9 @@ class MockService {
   /// Counter untuk auto-increment ID history baru.
   static int _historyIdCounter = 200;
 
+  /// Counter untuk auto-increment ID notifikasi baru.
+  static int _notifIdCounter = 1;
+
   // ─── Seed Data: Users ────────────────────────────────────────────────────────
 
   /// Daftar pengguna terdaftar dalam sistem.
@@ -55,7 +58,7 @@ class MockService {
       id: 1,
       username: 'admin',
       password: 'admin123',
-      fullName: 'Budi Santoso',
+      fullName: 'Javier Rakha',
       email: 'admin@helpdesk.id',
       avatarUrl: 'https://i.pravatar.cc/150?img=1',
       role: UserRole.admin,
@@ -65,7 +68,7 @@ class MockService {
       id: 2,
       username: 'helpdesk1',
       password: 'helpdesk123',
-      fullName: 'Siti Rahayu',
+      fullName: 'Surya Prakoso',
       email: 'siti@helpdesk.id',
       avatarUrl: 'https://i.pravatar.cc/150?img=5',
       role: UserRole.helpdesk,
@@ -75,7 +78,7 @@ class MockService {
       id: 3,
       username: 'helpdesk2',
       password: 'helpdesk123',
-      fullName: 'Andi Wijaya',
+      fullName: 'Aditya Alif',
       email: 'andi@helpdesk.id',
       avatarUrl: 'https://i.pravatar.cc/150?img=7',
       role: UserRole.helpdesk,
@@ -85,7 +88,7 @@ class MockService {
       id: 4,
       username: 'user1',
       password: 'user123',
-      fullName: 'Dewi Lestari',
+      fullName: 'Muhammad Abhista',
       email: 'dewi@gmail.com',
       avatarUrl: 'https://i.pravatar.cc/150?img=9',
       role: UserRole.user,
@@ -643,6 +646,112 @@ class MockService {
     ),
   ];
 
+  // ─── Notifications ─────────────────────────────────────────────────────────────
+
+  /// Daftar notifikasi dalam sistem.
+  static final List<AppNotification> _notifications = <AppNotification>[
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _user1.id,
+      title: 'Status Tiket Diperbarui',
+      message: 'Tiket "Software AutoCAD tidak bisa di-install" telah diubah menjadi In Progress oleh Surya Prakoso.',
+      ticketId: 6,
+      ticketTitle: 'Software AutoCAD tidak bisa di-install',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 19, 9, 30),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _user3.id,
+      title: 'Status Tiket Diperbarui',
+      message: 'Tiket "Monitor bergaris horizontal" telah di-assign ke Andi Wijaya dan status menjadi In Progress.',
+      ticketId: 7,
+      ticketTitle: 'Monitor bergaris horizontal',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 18, 10, 0),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _helpdesk1.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Komputer tidak bisa menyala" dibuat oleh Muhammad Abhista.',
+      ticketId: 1,
+      ticketTitle: 'Komputer tidak bisa menyala',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 20, 8, 30),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _helpdesk2.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Komputer tidak bisa menyala" dibuat oleh Muhammad Abhista.',
+      ticketId: 1,
+      ticketTitle: 'Komputer tidak bisa menyala',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 20, 8, 30),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _admin.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Komputer tidak bisa menyala" dibuat oleh Muhammad Abhista.',
+      ticketId: 1,
+      ticketTitle: 'Komputer tidak bisa menyala',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 20, 8, 30),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _user3.id,
+      title: 'Status Tiket Diperbarui',
+      message: 'Tiket "Lupa password login Windows" telah diubah menjadi Resolved oleh Surya Prakoso.',
+      ticketId: 10,
+      ticketTitle: 'Lupa password login Windows',
+      isRead: true,
+      createdAt: DateTime(2026, 4, 10, 17, 30),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _helpdesk1.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Tidak bisa akses sistem SIAKAD" dibuat oleh Reza Firmansyah.',
+      ticketId: 2,
+      ticketTitle: 'Tidak bisa akses sistem SIAKAD',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 21, 9, 0),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _helpdesk2.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Tidak bisa akses sistem SIAKAD" dibuat oleh Reza Firmansyah.',
+      ticketId: 2,
+      ticketTitle: 'Tidak bisa akses sistem SIAKAD',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 21, 9, 0),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _admin.id,
+      title: 'Tiket Baru',
+      message: 'Tiket baru "Tidak bisa akses sistem SIAKAD" dibuat oleh Reza Firmansyah.',
+      ticketId: 2,
+      ticketTitle: 'Tidak bisa akses sistem SIAKAD',
+      isRead: false,
+      createdAt: DateTime(2026, 4, 21, 9, 0),
+    ),
+    AppNotification(
+      id: _notifIdCounter++,
+      userId: _user2.id,
+      title: 'Status Tiket Diperbarui',
+      message: 'Tiket "Internet di Gedung C lambat" telah ditutup oleh Surya Prakoso.',
+      ticketId: 14,
+      ticketTitle: 'Internet di Gedung C lambat',
+      isRead: true,
+      createdAt: DateTime(2026, 4, 1, 15, 0),
+    ),
+  ];
+
   // ─── Authentication ───────────────────────────────────────────────────────────
 
   /// Mensimulasikan proses login.
@@ -741,6 +850,9 @@ class MockService {
     );
 
     _tickets.add(newTicket);
+
+    _notifyStaffNewTicket(newTicket);
+
     return newTicket;
   }
 
@@ -775,6 +887,9 @@ class MockService {
     );
 
     _tickets[index] = updatedTicket;
+
+    _notifyTicketOwner(updatedTicket);
+
     return updatedTicket;
   }
 
@@ -813,6 +928,9 @@ class MockService {
     );
 
     _tickets[ticketIndex] = updatedTicket;
+
+    _notifyTicketOwner(updatedTicket);
+
     return updatedTicket;
   }
 
@@ -928,5 +1046,98 @@ class MockService {
     }
 
     return List.unmodifiable(_users);
+  }
+
+  // ─── Internal Helper: Notifikasi ──────────────────────────────────────────────
+
+  /// Menambahkan notifikasi ke daftar untuk [userId] tertentu.
+  static void _addNotification({
+    required int userId,
+    required String title,
+    required String message,
+    int? ticketId,
+    String? ticketTitle,
+  }) {
+    _notifications.add(AppNotification(
+      id: _notifIdCounter++,
+      userId: userId,
+      title: title,
+      message: message,
+      ticketId: ticketId,
+      ticketTitle: ticketTitle,
+      isRead: false,
+      createdAt: DateTime.now(),
+    ));
+  }
+
+  /// Memberi notifikasi ke semua helpdesk & admin tentang tiket baru.
+  static void _notifyStaffNewTicket(Ticket ticket) {
+    final staff = _users.where(
+      (u) => u.role == UserRole.helpdesk || u.role == UserRole.admin,
+    );
+    for (final user in staff) {
+      _addNotification(
+        userId: user.id,
+        title: 'Tiket Baru',
+        message:
+            'Tiket baru "${ticket.title}" dibuat oleh ${ticket.createdBy.fullName}.',
+        ticketId: ticket.id,
+        ticketTitle: ticket.title,
+      );
+    }
+  }
+
+  /// Memberi notifikasi ke pembuat tiket bahwa statusnya berubah.
+  static void _notifyTicketOwner(Ticket ticket) {
+    if (currentUser?.id == ticket.createdBy.id) return;
+    _addNotification(
+      userId: ticket.createdBy.id,
+      title: 'Status Tiket Diperbarui',
+      message:
+          'Tiket "${ticket.title}" telah diubah menjadi ${ticket.status.label} oleh ${currentUser?.fullName ?? "Sistem"}.',
+      ticketId: ticket.id,
+      ticketTitle: ticket.title,
+    );
+  }
+
+  // ─── Notification Queries ─────────────────────────────────────────────────────
+
+  /// Mengambil daftar notifikasi untuk user yang sedang login.
+  static Future<List<AppNotification>> getNotifications() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (currentUser == null) return [];
+    return _notifications
+        .where((n) => n.userId == currentUser!.id)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  /// Mengambil jumlah notifikasi yang belum dibaca.
+  static Future<int> getUnreadCount() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (currentUser == null) return 0;
+    return _notifications
+        .where((n) => n.userId == currentUser!.id && !n.isRead)
+        .length;
+  }
+
+  /// Menandai satu notifikasi sebagai sudah dibaca.
+  static Future<void> markNotificationAsRead(int id) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _notifications.indexWhere((n) => n.id == id);
+    if (index != -1) {
+      _notifications[index] = _notifications[index].copyWith(isRead: true);
+    }
+  }
+
+  /// Menandai semua notifikasi user saat ini sebagai sudah dibaca.
+  static Future<void> markAllNotificationsAsRead() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (currentUser == null) return;
+    for (var i = 0; i < _notifications.length; i++) {
+      if (_notifications[i].userId == currentUser!.id && !_notifications[i].isRead) {
+        _notifications[i] = _notifications[i].copyWith(isRead: true);
+      }
+    }
   }
 }

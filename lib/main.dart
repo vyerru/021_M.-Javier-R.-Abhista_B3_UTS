@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'features/auth/login_screen.dart';
+import 'features/splash/splash_screen.dart';
 
 void main() {
   runApp(const ETicketingApp());
@@ -30,15 +30,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: LoginScreen(
-        // Agar DashboardScreen bisa menerima callback toggle,
-        // kita pass via konstruktor ketika login sukses.
-        // Lihat: LoginScreen akan push DashboardScreen dengan callback ini.
-      ),
-      // Named routes untuk navigasi deklaratif di langkah selanjutnya.
-      routes: {
-        LoginScreen.routeName: (_) => const LoginScreen(),
-      },
+      home: const SplashScreen(),
       builder: (context, child) {
         // Inject ThemeToggleCallback ke widget tree lewat InheritedWidget ringan.
         return ThemeToggleProvider(

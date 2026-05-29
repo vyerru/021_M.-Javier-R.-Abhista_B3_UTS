@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
 import '../auth/login_screen.dart';
+import '../notifications/notification_screen.dart';
 import '../tickets/ticket_list_screen.dart';
 
 
@@ -54,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ─── State ───────────────────────────────────────────────────────────────
   int _selectedNavIndex = 0;
+  int _unreadCount = 0;
 
   // ─── Kartu statistik (urutan & warna) ────────────────────────────────────
   static const List<_StatCard> _statCards = [
@@ -102,6 +104,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _statisticsFuture = MockService.getTicketStatistics();
       _recentTicketsFuture = MockService.getTicketsByRole();
+    });
+    _loadUnreadCount();
+  }
+
+  void _loadUnreadCount() {
+    MockService.getUnreadCount().then((count) {
+      if (mounted) setState(() => _unreadCount = count);
     });
   }
 
@@ -165,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const TicketListScreen(),
           
           // Index 2: Notifikasi
-          const Center(child: Text('Fitur Notifikasi Belum Tersedia')),
+          const NotificationScreen(),
           
           // Index 3: Profil
           const Center(child: Text('Fitur Profil Belum Tersedia')),
@@ -605,13 +614,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildBottomNav(bool isDark) {
     return NavigationBar(
       selectedIndex: _selectedNavIndex,
-      onDestinationSelected: (i) => setState(() => _selectedNavIndex = i),
+      onDestinationSelected: (i) {
+        setState(() => _selectedNavIndex = i);
+        if (i == 2) _loadUnreadCount();
+      },
       backgroundColor:
           isDark ? AppTheme.cardDark : AppTheme.cardLight,
       indicatorColor: AppTheme.accentCyan.withOpacity(0.15),
       surfaceTintColor: Colors.transparent,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      destinations: const [
+      destinations: [
         NavigationDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard_rounded,
@@ -625,9 +637,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'Tiket',
         ),
         NavigationDestination(
-          icon: Icon(Icons.notifications_outlined),
-          selectedIcon:
-              Icon(Icons.notifications_rounded, color: AppTheme.accentCyan),
+          icon: _unreadCount > 0
+              ? Badge(
+                  label: Text(
+                    _unreadCount > 99 ? '99+' : _unreadCount.toString(),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  child: const Icon(Icons.notifications_outlined),
+                )
+              : const Icon(Icons.notifications_outlined),
+          selectedIcon: _unreadCount > 0
+              ? Badge(
+                  label: Text(
+                    _unreadCount > 99 ? '99+' : _unreadCount.toString(),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  child: const Icon(Icons.notifications_rounded,
+                      color: AppTheme.accentCyan),
+                )
+              : const Icon(Icons.notifications_rounded,
+                  color: AppTheme.accentCyan),
           label: 'Notifikasi',
         ),
         NavigationDestination(
