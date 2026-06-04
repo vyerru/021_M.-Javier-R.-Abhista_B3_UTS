@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'features/splash/splash_screen.dart';
+import 'presentation/splash/splash_screen.dart';
 
 void main() {
   runApp(const ETicketingApp());

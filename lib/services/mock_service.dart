@@ -1,4 +1,4 @@
-import '../models/models.dart';
+import '../domain/entities/entities.dart';
 
 /// Kelas exception kustom untuk error autentikasi.
 class AuthException implements Exception {

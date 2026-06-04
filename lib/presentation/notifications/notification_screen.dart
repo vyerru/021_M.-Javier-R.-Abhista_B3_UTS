@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
+import '../../domain/entities/entities.dart';
 import '../../services/services.dart';
 import '../tickets/ticket_detail_screen.dart';
 

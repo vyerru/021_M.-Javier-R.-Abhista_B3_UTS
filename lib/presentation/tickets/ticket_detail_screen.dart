@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/models.dart';
+import '../../domain/entities/entities.dart';
 import '../../services/mock_service.dart';
 import '../../core/theme/app_theme.dart';
 
