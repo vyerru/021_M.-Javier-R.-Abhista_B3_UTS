@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../domain/entities/entities.dart';
-import '../../services/mock_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/ticket_provider.dart';
 
 class TicketDetailScreen extends StatefulWidget {
-  final int ticketId;
+  final String ticketId;
 
   const TicketDetailScreen({super.key, required this.ticketId});
 
@@ -13,14 +15,16 @@ class TicketDetailScreen extends StatefulWidget {
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
-  late Future<Ticket> _ticketFuture;
   final _commentController = TextEditingController();
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadTicket();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TicketProvider>().loadTicketDetail(widget.ticketId);
+      context.read<TicketProvider>().loadHelpdeskUsers();
+    });
   }
 
   @override
@@ -29,14 +33,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     super.dispose();
   }
 
-  void _loadTicket() {
-    _ticketFuture = MockService.getTicketById(widget.ticketId);
-  }
-
   void _refresh() {
-    setState(() {
-      _loadTicket();
-    });
+    context.read<TicketProvider>().loadTicketDetail(widget.ticketId);
   }
 
   // ── Submit komentar ──────────────────────────────────────────────────────────
@@ -45,17 +43,28 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
+    final user = context.read<AuthProvider>().currentUser;
+    if (user == null) return;
+
     setState(() => _isSubmitting = true);
 
-    try {
-      await MockService.addComment(widget.ticketId, text);
+    final ok = await context.read<TicketProvider>().addComment(
+          widget.ticketId,
+          user.id,
+          text,
+        );
+    if (ok) {
       _commentController.clear();
-      _refresh();
-    } on TicketException catch (e) {
-      _showSnackbar(e.message, isError: true);
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+    } else {
+      if (mounted) {
+        _showSnackbar(
+          context.read<TicketProvider>().error ?? 'Gagal menambahkan komentar',
+          isError: true,
+        );
+      }
     }
+
+    if (mounted) setState(() => _isSubmitting = false);
   }
 
   // ── Update status (admin/helpdesk) ───────────────────────────────────────────
@@ -137,21 +146,21 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     if (selected == null || selected == ticket.status) return;
 
     setState(() => _isSubmitting = true);
-    try {
-      await MockService.updateTicketStatus(widget.ticketId, selected);
-      _refresh();
+    final provider = context.read<TicketProvider>();
+    final ok = await provider.updateStatus(
+      widget.ticketId,
+      selected,
+    );
+    if (ok) {
       _showSnackbar('Status berhasil diubah ke ${selected.label}');
-    } on TicketException catch (e) {
-      _showSnackbar(e.message, isError: true);
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted) setState(() => _isSubmitting = false);
   }
 
   // ── Assign tiket (admin/helpdesk) ────────────────────────────────────────────
 
   Future<void> _showAssignSheet(Ticket ticket) async {
-    final helpdeskUsers = await MockService.getHelpdeskUsers();
+    final helpdeskUsers = context.read<TicketProvider>().helpdeskUsers;
 
     if (!mounted) return;
 
@@ -196,11 +205,18 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       tileColor: isCurrent
-                          ? AppTheme.accentCyan.withOpacity(0.1)
+                          ? AppTheme.accentCyan.withValues(alpha: 0.1)
                           : Colors.transparent,
                       leading: CircleAvatar(
-                        backgroundImage: NetworkImage(user.avatarUrl),
+                        backgroundImage: user.avatarUrl.isNotEmpty
+                            ? NetworkImage(user.avatarUrl)
+                            : null,
                         radius: 20,
+                        child: user.avatarUrl.isEmpty
+                            ? Text(user.fullName.isNotEmpty
+                                ? user.fullName[0].toUpperCase()
+                                : '?')
+                            : null,
                       ),
                       title: Text(
                         user.fullName,
@@ -225,15 +241,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     if (selected == null) return;
 
     setState(() => _isSubmitting = true);
-    try {
-      await MockService.assignTicket(widget.ticketId, selected.id);
-      _refresh();
+    final ok = await context.read<TicketProvider>().assignTicket(
+          widget.ticketId,
+          selected.id,
+        );
+    if (ok) {
       _showSnackbar('Tiket berhasil di-assign ke ${selected.fullName}');
-    } on TicketException catch (e) {
-      _showSnackbar(e.message, isError: true);
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted) setState(() => _isSubmitting = false);
   }
 
   void _showSnackbar(String message, {bool isError = false}) {
@@ -279,113 +294,101 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isStaff = MockService.currentUser?.role == UserRole.admin ||
-        MockService.currentUser?.role == UserRole.helpdesk;
+    final ticketProvider = context.watch<TicketProvider>();
+    final currentUser = context.watch<AuthProvider>().currentUser;
+    final isStaff = currentUser?.role == UserRole.admin ||
+        currentUser?.role == UserRole.helpdesk;
+    final ticket = ticketProvider.selectedTicket;
+    final isLoading = ticketProvider.isLoading && ticket == null;
+    final error = ticketProvider.error;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Tiket'),
         actions: [
-          if (isStaff)
-            FutureBuilder<Ticket>(
-              future: _ticketFuture,
-              builder: (_, snap) {
-                if (!snap.hasData) return const SizedBox.shrink();
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded),
-                  onSelected: (val) {
-                    if (val == 'status') _showUpdateStatusSheet(snap.data!);
-                    if (val == 'assign') _showAssignSheet(snap.data!);
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'status',
-                      child: Row(
-                        spacing: 12,
-                        children: [
-                          Icon(Icons.swap_horiz_rounded),
-                          Text('Ubah Status'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'assign',
-                      child: Row(
-                        spacing: 12,
-                        children: [
-                          Icon(Icons.person_add_alt_1_rounded),
-                          Text('Assign Tiket'),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
+          if (isStaff && ticket != null)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (val) {
+                if (val == 'status') _showUpdateStatusSheet(ticket);
+                if (val == 'assign') _showAssignSheet(ticket);
               },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'status',
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      Icon(Icons.swap_horiz_rounded),
+                      Text('Ubah Status'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'assign',
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      Icon(Icons.person_add_alt_1_rounded),
+                      Text('Assign Tiket'),
+                    ],
+                  ),
+                ),
+              ],
             ),
         ],
       ),
-      body: FutureBuilder<Ticket>(
-        future: _ticketFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null && ticket == null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text(
+                          error,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton(
+                          onPressed: _refresh,
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: _refresh,
-                      child: const Text('Coba Lagi'),
+                  ),
+                )
+              : ticket == null
+                  ? const SizedBox.shrink()
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: ListView(
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                            children: [
+                              _buildHeaderCard(ticket),
+                              const SizedBox(height: 12),
+                              _buildInfoCard(ticket),
+                              const SizedBox(height: 12),
+                              if (isStaff) ...[
+                                _buildStaffActionsCard(ticket),
+                                const SizedBox(height: 12),
+                              ],
+                              _buildTimelineSection(ticket),
+                              const SizedBox(height: 12),
+                              _buildCommentsSection(ticket, currentUser),
+                            ],
+                          ),
+                        ),
+                        _buildCommentInput(ticket),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final ticket = snapshot.data!;
-
-          return Column(
-            children: [
-              // ── Scrollable Content ────────────────────────────────────────
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    _buildHeaderCard(ticket),
-                    const SizedBox(height: 12),
-                    _buildInfoCard(ticket),
-                    const SizedBox(height: 12),
-                    if (isStaff) ...[
-                      _buildStaffActionsCard(ticket),
-                      const SizedBox(height: 12),
-                    ],
-                    _buildTimelineSection(ticket),
-                    const SizedBox(height: 12),
-                    _buildCommentsSection(ticket),
-                  ],
-                ),
-              ),
-
-              // ── Comment Input ─────────────────────────────────────────────
-              _buildCommentInput(ticket),
-            ],
-          );
-        },
-      ),
     );
   }
 
@@ -427,7 +430,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _priorityColor(ticket.priority).withOpacity(0.12),
+                    color: _priorityColor(ticket.priority).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -443,7 +446,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 Text(
                   '#${ticket.id}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -462,7 +465,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ticket.description,
               style: theme.textTheme.bodyMedium?.copyWith(
                 height: 1.6,
-                color: theme.colorScheme.onSurface.withOpacity(0.75),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
               ),
             ),
           ],
@@ -498,7 +501,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               value: ticket.assignedTo?.fullName ?? '— Belum di-assign —',
               avatar: ticket.assignedTo?.avatarUrl,
               valueColor: ticket.assignedTo == null
-                  ? theme.colorScheme.onSurface.withOpacity(0.4)
+                  ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                   : null,
             ),
             const Divider(height: 20),
@@ -580,7 +583,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       child: Text(
                         'Belum ada riwayat.',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
@@ -612,7 +615,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       color: dotColor,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: dotColor.withOpacity(0.3),
+                                        color: dotColor.withValues(alpha: 0.3),
                                         width: 3,
                                       ),
                                     ),
@@ -653,7 +656,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                           ?.copyWith(
                                         fontSize: 11,
                                         color: theme.colorScheme.onSurface
-                                            .withOpacity(0.45),
+                                            .withValues(alpha: 0.45),
                                       ),
                                     ),
                                   ],
@@ -671,7 +674,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  Widget _buildCommentsSection(Ticket ticket) {
+  Widget _buildCommentsSection(Ticket ticket, User? currentUser) {
     final theme = Theme.of(context);
 
     return Column(
@@ -697,12 +700,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     Icon(Icons.chat_bubble_outline_rounded,
                         size: 36,
                         color:
-                            theme.colorScheme.onSurface.withOpacity(0.25)),
+                            theme.colorScheme.onSurface.withValues(alpha: 0.25)),
                     const SizedBox(height: 8),
                     Text(
                       'Belum ada komentar',
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -712,12 +715,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           )
         else
           ...ticket.comments.map((comment) {
-            final isMe = comment.author.id == MockService.currentUser?.id;
+            final isMe = comment.author.id == currentUser?.id;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Card(
                 color: isMe
-                    ? AppTheme.accentCyan.withOpacity(0.07)
+                    ? AppTheme.accentCyan.withValues(alpha: 0.07)
                     : null,
                 child: Padding(
                   padding: const EdgeInsets.all(14),
@@ -729,8 +732,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         children: [
                           CircleAvatar(
                             radius: 14,
-                            backgroundImage:
-                                NetworkImage(comment.author.avatarUrl),
+                            backgroundImage: comment.author.avatarUrl.isNotEmpty
+                                ? NetworkImage(comment.author.avatarUrl)
+                                : null,
+                            child: comment.author.avatarUrl.isEmpty
+                                ? Text(comment.author.fullName.isNotEmpty
+                                    ? comment.author.fullName[0].toUpperCase()
+                                    : '?', style: const TextStyle(fontSize: 10))
+                                : null,
                           ),
                           Expanded(
                             child: Column(
@@ -751,7 +760,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                           horizontal: 6, vertical: 1),
                                       decoration: BoxDecoration(
                                         color: AppTheme.accentCyan
-                                            .withOpacity(0.12),
+                                            .withValues(alpha: 0.12),
                                         borderRadius:
                                             BorderRadius.circular(4),
                                       ),
@@ -771,7 +780,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 10,
                                     color: theme.colorScheme.onSurface
-                                        .withOpacity(0.4),
+                                        .withValues(alpha: 0.4),
                                   ),
                                 ),
                               ],
@@ -844,7 +853,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     icon: const Icon(Icons.send_rounded, size: 20),
                     style: IconButton.styleFrom(
                       backgroundColor: isResolved
-                          ? theme.colorScheme.onSurface.withOpacity(0.12)
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.12)
                           : AppTheme.accentCyan,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -886,14 +895,14 @@ class _InfoRow extends StatelessWidget {
       children: [
         Icon(icon,
             size: 18,
-            color: theme.colorScheme.onSurface.withOpacity(0.45)),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
         const SizedBox(width: 10),
         SizedBox(
           width: 90,
           child: Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ),

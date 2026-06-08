@@ -1,9 +1,9 @@
 class AppNotification {
-  final int id;
-  final int userId;
+  final String id;
+  final String userId;
   final String title;
   final String message;
-  final int? ticketId;
+  final String? ticketId;
   final String? ticketTitle;
   final bool isRead;
   final DateTime createdAt;
@@ -20,11 +20,11 @@ class AppNotification {
   });
 
   AppNotification copyWith({
-    int? id,
-    int? userId,
+    String? id,
+    String? userId,
     String? title,
     String? message,
-    int? ticketId,
+    String? ticketId,
     String? ticketTitle,
     bool? isRead,
     DateTime? createdAt,

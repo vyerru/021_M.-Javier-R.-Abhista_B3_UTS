@@ -1,9 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/entities.dart';
+import 'user_dto.dart';
 
 part 'comment_dto.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class CommentDto {
   final String id;
   @JsonKey(name: 'ticket_id')
@@ -15,6 +16,8 @@ class CommentDto {
   final List<String> attachmentUrls;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
+  @JsonKey(name: 'author', includeToJson: false)
+  final UserDto? nestedAuthor;
 
   const CommentDto({
     required this.id,
@@ -23,6 +26,7 @@ class CommentDto {
     required this.message,
     this.attachmentUrls = const [],
     required this.createdAt,
+    this.nestedAuthor,
   });
 
   factory CommentDto.fromJson(Map<String, dynamic> json) =>
@@ -30,11 +34,22 @@ class CommentDto {
 
   Map<String, dynamic> toJson() => _$CommentDtoToJson(this);
 
-  Comment toEntity({required User author}) {
+  Comment toEntity({User? author}) {
+    final resolvedAuthor = author ??
+        nestedAuthor?.toEntity() ??
+        User(
+          id: authorId,
+          username: '',
+          fullName: 'Unknown',
+          email: '',
+          avatarUrl: '',
+          role: UserRole.user,
+          createdAt: createdAt,
+        );
     return Comment(
-      id: int.tryParse(id) ?? id.hashCode,
-      ticketId: int.tryParse(ticketId) ?? ticketId.hashCode,
-      author: author,
+      id: id,
+      ticketId: ticketId,
+      author: resolvedAuthor,
       message: message,
       attachmentUrls: attachmentUrls,
       createdAt: createdAt,
@@ -43,9 +58,9 @@ class CommentDto {
 
   static CommentDto fromEntity(Comment entity) {
     return CommentDto(
-      id: entity.id.toString(),
-      ticketId: entity.ticketId.toString(),
-      authorId: entity.author.id.toString(),
+      id: entity.id,
+      ticketId: entity.ticketId,
+      authorId: entity.author.id,
       message: entity.message,
       attachmentUrls: entity.attachmentUrls,
       createdAt: entity.createdAt,

@@ -41,6 +41,12 @@ app.*.map.json
 
 # Skills
 .agents/
+opencode.json
+
+# Environment
+.env
+.env.local
+.env.*.local
 
 # Android Studio will place build artifacts here
 /android/app/debug

@@ -1,8 +1,8 @@
 import 'user.dart';
 
 class Comment {
-  final int id;
-  final int ticketId;
+  final String id;
+  final String ticketId;
   final User author;
   final String message;
   final List<String> attachmentUrls;
@@ -18,8 +18,8 @@ class Comment {
   });
 
   Comment copyWith({
-    int? id,
-    int? ticketId,
+    String? id,
+    String? ticketId,
     User? author,
     String? message,
     List<String>? attachmentUrls,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../main.dart';
+import '../providers/auth_provider.dart';
+import '../dashboard/dashboard_screen.dart';
 import '../auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -43,17 +47,39 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animController.forward();
 
-    Future.delayed(const Duration(milliseconds: 2800), () {
+    Future.delayed(const Duration(milliseconds: 2800), () async {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, animation, __) => const LoginScreen(),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
+
+      final auth = context.read<AuthProvider>();
+      await auth.checkSession();
+
+      if (!mounted) return;
+
+      final themeProvider = ThemeToggleProvider.of(context);
+      if (auth.isLoggedIn) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, animation, __) => DashboardScreen(
+              onThemeToggle: themeProvider?.toggleTheme ?? () {},
+              isDarkMode: themeProvider?.isDarkMode ?? false,
+            ),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, animation, __) => const LoginScreen(),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
     });
   }
 
@@ -93,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: AppTheme.accentCyan.withOpacity(0.12),
+                          color: AppTheme.accentCyan.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(28),
                         ),
                         child: const Icon(
@@ -118,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w300,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -129,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            AppTheme.accentCyan.withOpacity(0.6),
+                            AppTheme.accentCyan.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -149,7 +175,7 @@ class _SplashScreenState extends State<SplashScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                     letterSpacing: 0.5,
                   ),
                 ),

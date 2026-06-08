@@ -7,7 +7,6 @@ part 'user_dto.g.dart';
 class UserDto {
   final String id;
   final String username;
-  final String password;
   @JsonKey(name: 'full_name')
   final String fullName;
   final String email;
@@ -20,7 +19,6 @@ class UserDto {
   const UserDto({
     required this.id,
     required this.username,
-    required this.password,
     required this.fullName,
     required this.email,
     required this.avatarUrl,
@@ -35,9 +33,8 @@ class UserDto {
 
   User toEntity() {
     return User(
-      id: int.tryParse(id) ?? id.hashCode,
+      id: id,
       username: username,
-      password: password,
       fullName: fullName,
       email: email,
       avatarUrl: avatarUrl,
@@ -51,9 +48,8 @@ class UserDto {
 
   static UserDto fromEntity(User entity) {
     return UserDto(
-      id: entity.id.toString(),
+      id: entity.id,
       username: entity.username,
-      password: entity.password,
       fullName: entity.fullName,
       email: entity.email,
       avatarUrl: entity.avatarUrl,

@@ -106,7 +106,7 @@ abstract final class AppTheme {
         ).copyWith(
           overlayColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.pressed)
-                ? Colors.white.withOpacity(0.15)
+                ? Colors.white.withValues(alpha: 0.15)
                 : null,
           ),
         ),
@@ -240,7 +240,7 @@ abstract final class AppTheme {
           statusBarIconBrightness: Brightness.light,
         ),
         surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
       ),
 
       cardTheme: CardThemeData(
@@ -350,14 +350,14 @@ abstract final class AppTheme {
   static Color statusBackgroundColor(String status) {
     switch (status.toLowerCase()) {
       case 'open':
-        return statusOpen.withOpacity(0.12);
+        return statusOpen.withValues(alpha: 0.12);
       case 'inprogress':
       case 'in progress':
-        return statusInProgress.withOpacity(0.12);
+        return statusInProgress.withValues(alpha: 0.12);
       case 'resolved':
-        return statusResolved.withOpacity(0.12);
+        return statusResolved.withValues(alpha: 0.12);
       case 'closed':
-        return statusClosed.withOpacity(0.12);
+        return statusClosed.withValues(alpha: 0.12);
       default:
         return Colors.transparent;
     }

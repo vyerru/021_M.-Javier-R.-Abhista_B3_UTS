@@ -37,11 +37,11 @@ class NotificationDto {
 
   AppNotification toEntity() {
     return AppNotification(
-      id: int.tryParse(id) ?? id.hashCode,
-      userId: int.tryParse(userId) ?? userId.hashCode,
+      id: id,
+      userId: userId,
       title: title,
       message: message,
-      ticketId: ticketId != null ? int.tryParse(ticketId!) ?? ticketId!.hashCode : null,
+      ticketId: ticketId,
       ticketTitle: ticketTitle,
       isRead: isRead,
       createdAt: createdAt,
@@ -50,11 +50,11 @@ class NotificationDto {
 
   static NotificationDto fromEntity(AppNotification entity) {
     return NotificationDto(
-      id: entity.id.toString(),
-      userId: entity.userId.toString(),
+      id: entity.id,
+      userId: entity.userId,
       title: entity.title,
       message: entity.message,
-      ticketId: entity.ticketId?.toString(),
+      ticketId: entity.ticketId,
       ticketTitle: entity.ticketTitle,
       isRead: entity.isRead,
       createdAt: entity.createdAt,

@@ -1,9 +1,8 @@
 import 'enums.dart';
 
 class User {
-  final int id;
+  final String id;
   final String username;
-  final String password;
   final String fullName;
   final String email;
   final String avatarUrl;
@@ -13,7 +12,6 @@ class User {
   const User({
     required this.id,
     required this.username,
-    required this.password,
     required this.fullName,
     required this.email,
     required this.avatarUrl,
@@ -22,9 +20,8 @@ class User {
   });
 
   User copyWith({
-    int? id,
+    String? id,
     String? username,
-    String? password,
     String? fullName,
     String? email,
     String? avatarUrl,
@@ -34,7 +31,6 @@ class User {
     return User(
       id: id ?? this.id,
       username: username ?? this.username,
-      password: password ?? this.password,
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       avatarUrl: avatarUrl ?? this.avatarUrl,

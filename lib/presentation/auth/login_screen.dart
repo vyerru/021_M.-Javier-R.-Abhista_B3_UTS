@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
-import '../../services/services.dart';
-import '../dashboard/dashboard_screen.dart';
 import '../../main.dart';
+import '../providers/auth_provider.dart';
+import '../dashboard/dashboard_screen.dart';
 
-/// Halaman Login — FR-001.
-///
-/// Menangani autentikasi pengguna dengan memanggil [MockService.login].
-/// Menampilkan loading state dan error via [SnackBar] saat terjadi [AuthException].
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,16 +16,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
-  // ─── Controllers & Keys ──────────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // ─── State ───────────────────────────────────────────────────────────────
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // ─── Animation ───────────────────────────────────────────────────────────
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
   late final Animation<Offset> _slideAnim;
@@ -52,62 +46,49 @@ class _LoginScreenState extends State<LoginScreen>
       curve: Curves.easeOutCubic,
     ));
 
-    // Jalankan animasi masuk saat halaman dibuka.
     _animController.forward();
   }
 
   @override
   void dispose() {
     _animController.dispose();
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // ─── Logic ───────────────────────────────────────────────────────────────
-
   Future<void> _handleLogin() async {
-    // Tutup keyboard.
     FocusScope.of(context).unfocus();
-
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    try {
-      await MockService.login(
-        _usernameController.text.trim(),
-        _passwordController.text,
-      );
+    final auth = context.read<AuthProvider>();
+    final success = await auth.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
+    setState(() => _isLoading = false);
+
+    if (success) {
       final themeProvider = ThemeToggleProvider.of(context);
-
-      // Navigasi ke Dashboard, hapus semua route sebelumnya.
       Navigator.of(context).pushReplacement(
-         PageRouteBuilder(
-           pageBuilder: (_, animation, __) => DashboardScreen(
-             onThemeToggle: themeProvider?.toggleTheme ?? () {},
-             isDarkMode: themeProvider?.isDarkMode ?? false,
-           ),
+        PageRouteBuilder(
+          pageBuilder: (_, animation, __) => DashboardScreen(
+            onThemeToggle: themeProvider?.toggleTheme ?? () {},
+            isDarkMode: themeProvider?.isDarkMode ?? false,
+          ),
           transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
           transitionDuration: const Duration(milliseconds: 350),
         ),
       );
-    } on AuthException catch (e) {
-      if (!mounted) return;
-      _showErrorSnackBar(e.message);
-    } catch (_) {
-      if (!mounted) return;
-      _showErrorSnackBar('Terjadi kesalahan. Silakan coba lagi.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      _showErrorSnackBar(auth.error ?? 'Login gagal. Silakan coba lagi.');
     }
   }
 
@@ -195,10 +176,10 @@ class _LoginScreenState extends State<LoginScreen>
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: AppTheme.accentCyan.withOpacity(0.12),
+            color: AppTheme.accentCyan.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: AppTheme.accentCyan.withOpacity(0.3), width: 1),
+                color: AppTheme.accentCyan.withValues(alpha: 0.3), width: 1),
           ),
           child: const Icon(
             Icons.confirmation_number_outlined,
@@ -246,7 +227,7 @@ class _LoginScreenState extends State<LoginScreen>
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -257,9 +238,9 @@ class _LoginScreenState extends State<LoginScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Username
+            // Email
             Text(
-              'Username',
+              'Email',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -271,18 +252,21 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             const SizedBox(height: 8),
             TextFormField(
-              controller: _usernameController,
-              keyboardType: TextInputType.text,
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               autocorrect: false,
               enabled: !_isLoading,
               decoration: const InputDecoration(
-                hintText: 'Masukkan username',
-                prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+                hintText: 'Masukkan email',
+                prefixIcon: Icon(Icons.email_outlined, size: 20),
               ),
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
-                  return 'Username tidak boleh kosong';
+                  return 'Email tidak boleh kosong';
+                }
+                if (!val.contains('@')) {
+                  return 'Format email tidak valid';
                 }
                 return null;
               },
@@ -362,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen>
       height: 52,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppTheme.accentCyan.withOpacity(0.6),
+        color: AppTheme.accentCyan.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(
@@ -383,20 +367,20 @@ class _LoginScreenState extends State<LoginScreen>
         ? const Color(0xFF475569)
         : const Color(0xFF94A3B8);
     final accounts = [
-      ('admin', 'admin123', 'Admin'),
-      ('helpdesk1', 'helpdesk123', 'Helpdesk'),
-      ('user1', 'user123', 'User'),
+      ('admin@e-ticketing.demo', 'admin123', 'Admin'),
+      ('helpdesk@e-ticketing.demo', 'helpdesk123', 'Helpdesk'),
+      ('user@e-ticketing.demo', 'user123456', 'User'),
     ];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
-            ? AppTheme.accentCyan.withOpacity(0.05)
+            ? AppTheme.accentCyan.withValues(alpha: 0.05)
             : const Color(0xFFF0F9FF),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.accentCyan.withOpacity(0.2),
+          color: AppTheme.accentCyan.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -406,14 +390,14 @@ class _LoginScreenState extends State<LoginScreen>
           Row(
             children: [
               Icon(Icons.info_outline_rounded,
-                  size: 15, color: AppTheme.accentCyan.withOpacity(0.8)),
+                  size: 15, color: AppTheme.accentCyan.withValues(alpha: 0.8)),
               const SizedBox(width: 6),
               Text(
                 'Akun Demo',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.accentCyan.withOpacity(0.9),
+                  color: AppTheme.accentCyan.withValues(alpha: 0.9),
                   letterSpacing: 0.3,
                 ),
               ),

@@ -33,36 +33,32 @@ class TicketHistoryDto {
   Map<String, dynamic> toJson() => _$TicketHistoryDtoToJson(this);
 
   TicketHistory toEntity({required User changedBy}) {
-    TicketStatus? from;
-    if (fromStatus != null) {
-      from = TicketStatus.values.firstWhere(
-        (s) => s.name == fromStatus,
-        orElse: () => TicketStatus.open,
-      );
-    }
-    TicketStatus? to;
-    if (toStatus != null) {
-      to = TicketStatus.values.firstWhere(
-        (s) => s.name == toStatus,
-        orElse: () => TicketStatus.open,
-      );
-    }
     return TicketHistory(
-      id: int.tryParse(id) ?? id.hashCode,
-      ticketId: int.tryParse(ticketId) ?? ticketId.hashCode,
+      id: id,
+      ticketId: ticketId,
       changedBy: changedBy,
       action: action,
-      fromStatus: from,
-      toStatus: to,
+      fromStatus: fromStatus != null
+          ? TicketStatus.values.firstWhere(
+              (s) => s.name == fromStatus,
+              orElse: () => TicketStatus.open,
+            )
+          : null,
+      toStatus: toStatus != null
+          ? TicketStatus.values.firstWhere(
+              (s) => s.name == toStatus,
+              orElse: () => TicketStatus.open,
+            )
+          : null,
       timestamp: timestamp,
     );
   }
 
   static TicketHistoryDto fromEntity(TicketHistory entity) {
     return TicketHistoryDto(
-      id: entity.id.toString(),
-      ticketId: entity.ticketId.toString(),
-      changedById: entity.changedBy.id.toString(),
+      id: entity.id,
+      ticketId: entity.ticketId,
+      changedById: entity.changedBy.id,
       action: entity.action,
       fromStatus: entity.fromStatus?.name,
       toStatus: entity.toStatus?.name,

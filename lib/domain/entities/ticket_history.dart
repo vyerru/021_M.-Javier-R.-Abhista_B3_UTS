@@ -2,8 +2,8 @@ import 'enums.dart';
 import 'user.dart';
 
 class TicketHistory {
-  final int id;
-  final int ticketId;
+  final String id;
+  final String ticketId;
   final User changedBy;
   final String action;
   final TicketStatus? fromStatus;
@@ -21,8 +21,8 @@ class TicketHistory {
   });
 
   TicketHistory copyWith({
-    int? id,
-    int? ticketId,
+    String? id,
+    String? ticketId,
     User? changedBy,
     String? action,
     TicketStatus? fromStatus,

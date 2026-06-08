@@ -9,7 +9,6 @@ part of 'user_dto.dart';
 UserDto _$UserDtoFromJson(Map<String, dynamic> json) => UserDto(
   id: json['id'] as String,
   username: json['username'] as String,
-  password: json['password'] as String,
   fullName: json['full_name'] as String,
   email: json['email'] as String,
   avatarUrl: json['avatar_url'] as String,
@@ -20,7 +19,6 @@ UserDto _$UserDtoFromJson(Map<String, dynamic> json) => UserDto(
 Map<String, dynamic> _$UserDtoToJson(UserDto instance) => <String, dynamic>{
   'id': instance.id,
   'username': instance.username,
-  'password': instance.password,
   'full_name': instance.fullName,
   'email': instance.email,
   'avatar_url': instance.avatarUrl,

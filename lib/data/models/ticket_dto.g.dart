@@ -13,8 +13,8 @@ TicketDto _$TicketDtoFromJson(Map<String, dynamic> json) => TicketDto(
   status: json['status'] as String,
   priority: json['priority'] as String,
   category: json['category'] as String,
-  createdById: json['created_by'] as String,
-  assignedToId: json['assigned_to'] as String?,
+  createdByRaw: json['created_by'],
+  assignedToRaw: json['assigned_to'],
   attachmentUrls:
       (json['attachment_urls'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -31,8 +31,8 @@ Map<String, dynamic> _$TicketDtoToJson(TicketDto instance) => <String, dynamic>{
   'status': instance.status,
   'priority': instance.priority,
   'category': instance.category,
-  'created_by': instance.createdById,
-  'assigned_to': instance.assignedToId,
+  'created_by': instance.createdByRaw,
+  'assigned_to': instance.assignedToRaw,
   'attachment_urls': instance.attachmentUrls,
   'created_at': instance.createdAt.toIso8601String(),
   'updated_at': instance.updatedAt.toIso8601String(),

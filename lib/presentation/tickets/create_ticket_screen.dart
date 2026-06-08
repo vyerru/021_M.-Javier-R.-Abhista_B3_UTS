@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../domain/entities/entities.dart';
-import '../../services/mock_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/ticket_provider.dart';
 
 class CreateTicketScreen extends StatefulWidget {
   const CreateTicketScreen({super.key});
@@ -30,179 +32,111 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     super.dispose();
   }
 
-  Future<void> _submitTicket() async {
-    // Validasi form agar tidak kosong
+  Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    try {
-      final user = MockService.currentUser;
-      if (user == null) throw Exception('Sesi tidak valid, silakan login ulang.');
+    final auth = context.read<AuthProvider>();
+    final ticketProvider = context.read<TicketProvider>();
 
-      // ID dan History akan dioverride oleh MockService.addTicket
-      final newTicket = Ticket(
-        id: 0, 
-        title: _titleController.text.trim(),
-        description: _descController.text.trim(),
-        status: TicketStatus.open,
-        priority: _selectedPriority,
-        category: _selectedCategory,
-        createdBy: user,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        attachmentUrls: _hasAttachment ? ['dummy_screenshot.png'] : [],
-      );
+    final ticket = Ticket(
+      id: '',
+      title: _titleController.text.trim(),
+      description: _descController.text.trim(),
+      status: TicketStatus.open,
+      priority: _selectedPriority,
+      category: _selectedCategory,
+      createdBy: auth.currentUser!,
+      attachmentUrls: _hasAttachment ? ['mock_attachment.pdf'] : [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
-      await MockService.addTicket(newTicket);
+    final success = await ticketProvider.createTicket(ticket);
 
-      if (!mounted) return;
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pop(context, true);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tiket berhasil dibuat!'),
-          backgroundColor: AppTheme.statusResolved,
-        ),
+        SnackBar(content: Text(ticketProvider.error ?? 'Gagal membuat tiket'), backgroundColor: const Color(0xFF7F1D1D)),
       );
-      
-      // Kembali ke layar List Tiket setelah berhasil
-      Navigator.pop(context);
-      
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: AppTheme.statusOpen,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buat Tiket Baru'),
-      ),
-      body: SafeArea(
+      appBar: AppBar(title: const Text('Buat Tiket Baru')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              // ── Judul Tiket ───────────────────────────────────────────────
-              Text(
-                'Judul Masalah',
-                style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Judul', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _titleController,
+              enabled: !_isLoading,
+              decoration: const InputDecoration(hintText: 'Judul tiket'),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
+            ),
+            const SizedBox(height: 20),
+            Text('Kategori', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: _isLoading ? null : (v) => setState(() => _selectedCategory = v ?? 'Hardware'),
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.category_outlined, size: 20)),
+            ),
+            const SizedBox(height: 20),
+            Text('Prioritas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            const SizedBox(height: 8),
+            SegmentedButton<TicketPriority>(
+              segments: TicketPriority.values.map((p) => ButtonSegment(value: p, label: Text(p.label, style: const TextStyle(fontSize: 12)))).toList(),
+              selected: {_selectedPriority},
+              onSelectionChanged: (v) => setState(() => _selectedPriority = v.first),
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: AppTheme.accentCyan.withValues(alpha: 0.15),
+                selectedForegroundColor: AppTheme.accentCyan,
+                side: BorderSide.none,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _titleController,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(hintText: 'Misal: Internet lab komputer B mati'),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Judul wajib diisi' : null,
+            ),
+            const SizedBox(height: 20),
+            Text('Deskripsi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _descController,
+              enabled: !_isLoading,
+              maxLines: 5,
+              decoration: const InputDecoration(hintText: 'Deskripsikan masalah Anda...', alignLabelWithHint: true),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Deskripsi tidak boleh kosong' : null,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Lampirkan File', style: TextStyle(fontSize: 14)),
+              subtitle: const Text('mock_attachment.pdf', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+              value: _hasAttachment,
+              onChanged: !_isLoading ? (v) => setState(() => _hasAttachment = v) : null,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppTheme.accentCyan,
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleSubmit,
+                child: _isLoading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)) : const Text('Buat Tiket'),
               ),
-              const SizedBox(height: 20),
-
-              // ── Kategori & Prioritas ──────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kategori',
-                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _selectedCategory,
-                          items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                          onChanged: _isLoading ? null : (val) => setState(() => _selectedCategory = val!),
-                          decoration: const InputDecoration(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Prioritas',
-                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<TicketPriority>(
-                          value: _selectedPriority,
-                          items: TicketPriority.values.map((p) => DropdownMenuItem(value: p, child: Text(p.label))).toList(),
-                          onChanged: _isLoading ? null : (val) => setState(() => _selectedPriority = val!),
-                          decoration: const InputDecoration(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // ── Deskripsi ─────────────────────────────────────────────────
-              Text(
-                'Deskripsi Lengkap',
-                style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _descController,
-                enabled: !_isLoading,
-                maxLines: 5,
-                decoration: const InputDecoration(hintText: 'Jelaskan kronologi dan detail masalah yang dialami...'),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Deskripsi wajib diisi' : null,
-              ),
-              const SizedBox(height: 20),
-
-              // ── Mock Upload Lampiran ──────────────────────────────────────
-              Text(
-                'Lampiran (Opsional)',
-                style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : () => setState(() => _hasAttachment = !_hasAttachment),
-                icon: Icon(
-                  _hasAttachment ? Icons.check_circle_rounded : Icons.attach_file_rounded, 
-                  color: _hasAttachment ? AppTheme.statusResolved : theme.colorScheme.onSurface.withOpacity(0.6)
-                ),
-                label: Text(
-                  _hasAttachment ? '1 file siap diunggah (dummy_screenshot.png)' : 'Pilih Lampiran',
-                  style: TextStyle(color: _hasAttachment ? AppTheme.statusResolved : null),
-                ),
-                style: OutlinedButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // ── Tombol Submit ─────────────────────────────────────────────
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitTicket,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24, 
-                        height: 24, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
-                      )
-                    : const Text('Kirim Tiket'),
-              ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ),
     );

@@ -1,15 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/network/supabase_config.dart';
 import 'core/theme/app_theme.dart';
+import 'data/datasources/supabase_auth_data_source.dart';
+import 'data/datasources/supabase_comment_data_source.dart';
+import 'data/datasources/supabase_notification_data_source.dart';
+import 'data/datasources/supabase_ticket_data_source.dart';
+import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/comment_repository_impl.dart';
+import 'data/repositories/notification_repository_impl.dart';
+import 'data/repositories/ticket_repository_impl.dart';
+import 'domain/usecases/auth/auth_usecases.dart';
+import 'domain/usecases/comments/comment_usecases.dart';
+import 'domain/usecases/notifications/notification_usecases.dart';
+import 'domain/usecases/tickets/ticket_usecases.dart';
+import 'presentation/providers/providers.dart';
 import 'presentation/splash/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load();
+
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    anonKey: SupabaseConfig.supabaseAnonKey,
+  );
+
   runApp(const ETicketingApp());
 }
 
-/// Root widget aplikasi.
-///
-/// Menyimpan state [_isDarkMode] di sini agar toggle tema bisa
-/// dipropagasi ke seluruh widget tree tanpa state management eksternal.
 class ETicketingApp extends StatefulWidget {
   const ETicketingApp({super.key});
 
@@ -19,34 +41,83 @@ class ETicketingApp extends StatefulWidget {
 
 class _ETicketingAppState extends State<ETicketingApp> {
   bool _isDarkMode = false;
+  late final SupabaseClient _supabase;
+  late final AuthProvider _authProvider;
+  late final TicketProvider _ticketProvider;
+  late final NotificationProvider _notificationProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _supabase = Supabase.instance.client;
+
+    final authDataSource = SupabaseAuthDataSource(_supabase);
+    final ticketDataSource = SupabaseTicketDataSource(_supabase);
+    final commentDataSource = SupabaseCommentDataSource(_supabase);
+    final notificationDataSource = SupabaseNotificationDataSource(_supabase);
+
+    final authRepo = AuthRepositoryImpl(authDataSource);
+    final notificationRepo = NotificationRepositoryImpl(notificationDataSource);
+    final ticketRepo = TicketRepositoryImpl(ticketDataSource, commentDataSource);
+    final commentRepo = CommentRepositoryImpl(commentDataSource);
+
+    _authProvider = AuthProvider(
+      loginUseCase: LoginUseCase(authRepo),
+      registerUseCase: RegisterUseCase(authRepo),
+      logoutUseCase: LogoutUseCase(authRepo),
+      getCurrentUserUseCase: GetCurrentUserUseCase(authRepo),
+      updateProfileUseCase: UpdateProfileUseCase(authRepo),
+    );
+
+    _ticketProvider = TicketProvider(
+      getTicketsUseCase: GetTicketsUseCase(ticketRepo),
+      getTicketByIdUseCase: GetTicketByIdUseCase(ticketRepo),
+      createTicketUseCase: CreateTicketUseCase(ticketRepo),
+      updateTicketStatusUseCase: UpdateTicketStatusUseCase(ticketRepo),
+      assignTicketUseCase: AssignTicketUseCase(ticketRepo),
+      getStatisticsUseCase: GetStatisticsUseCase(ticketRepo),
+      getHelpdeskUsersUseCase: GetHelpdeskUsersUseCase(ticketRepo),
+      addCommentUseCase: AddCommentUseCase(commentRepo),
+      getCommentsUseCase: GetCommentsUseCase(commentRepo),
+    );
+
+    _notificationProvider = NotificationProvider(
+      getNotificationsUseCase: GetNotificationsUseCase(notificationRepo),
+      getUnreadCountUseCase: GetUnreadCountUseCase(notificationRepo),
+      markAsReadUseCase: MarkAsReadUseCase(notificationRepo),
+      markAllAsReadUseCase: MarkAllAsReadUseCase(notificationRepo),
+    );
+  }
 
   void _toggleTheme() => setState(() => _isDarkMode = !_isDarkMode);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'E-Ticketing Helpdesk',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const SplashScreen(),
-      builder: (context, child) {
-        // Inject ThemeToggleCallback ke widget tree lewat InheritedWidget ringan.
-        return ThemeToggleProvider(
-          toggleTheme: _toggleTheme,
-          isDarkMode: _isDarkMode,
-          child: child!,
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _authProvider),
+        ChangeNotifierProvider.value(value: _ticketProvider),
+        ChangeNotifierProvider.value(value: _notificationProvider),
+      ],
+      child: MaterialApp(
+        title: 'E-Ticketing Helpdesk',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        home: const SplashScreen(),
+        builder: (context, child) {
+          return ThemeToggleProvider(
+            toggleTheme: _toggleTheme,
+            isDarkMode: _isDarkMode,
+            child: child!,
+          );
+        },
+      ),
     );
   }
 }
 
-// ─── InheritedWidget ringan untuk propagasi callback toggle tema ──────────────
-
-/// Menyediakan [toggleTheme] callback ke seluruh widget tree.
-/// Lebih ringan dari Provider dan tidak memerlukan dependency eksternal.
 class ThemeToggleProvider extends InheritedWidget {
   const ThemeToggleProvider({
     required this.toggleTheme,
@@ -57,7 +128,6 @@ class ThemeToggleProvider extends InheritedWidget {
   final VoidCallback toggleTheme;
   final bool isDarkMode;
 
-  /// Mengakses provider dari context manapun.
   static ThemeToggleProvider? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<ThemeToggleProvider>();
   }

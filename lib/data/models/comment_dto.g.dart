@@ -17,6 +17,9 @@ CommentDto _$CommentDtoFromJson(Map<String, dynamic> json) => CommentDto(
           .toList() ??
       const [],
   createdAt: DateTime.parse(json['created_at'] as String),
+  nestedAuthor: json['author'] == null
+      ? null
+      : UserDto.fromJson(json['author'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$CommentDtoToJson(CommentDto instance) =>

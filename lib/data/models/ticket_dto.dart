@@ -1,9 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/entities.dart';
+import 'user_dto.dart';
 
 part 'ticket_dto.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class TicketDto {
   final String id;
   final String title;
@@ -12,9 +13,9 @@ class TicketDto {
   final String priority;
   final String category;
   @JsonKey(name: 'created_by')
-  final String createdById;
+  final dynamic createdByRaw;
   @JsonKey(name: 'assigned_to')
-  final String? assignedToId;
+  final dynamic assignedToRaw;
   @JsonKey(name: 'attachment_urls')
   final List<String> attachmentUrls;
   @JsonKey(name: 'created_at')
@@ -29,12 +30,41 @@ class TicketDto {
     required this.status,
     required this.priority,
     required this.category,
-    required this.createdById,
-    this.assignedToId,
+    required this.createdByRaw,
+    this.assignedToRaw,
     this.attachmentUrls = const [],
     required this.createdAt,
     required this.updatedAt,
   });
+
+  String get createdById {
+    if (createdByRaw is Map) {
+      return (createdByRaw as Map)['id'] as String;
+    }
+    return createdByRaw as String;
+  }
+
+  String? get assignedToId {
+    if (assignedToRaw == null) return null;
+    if (assignedToRaw is Map) {
+      return (assignedToRaw as Map)['id'] as String;
+    }
+    return assignedToRaw as String?;
+  }
+
+  UserDto? get nestedCreatedBy {
+    if (createdByRaw is Map) {
+      return UserDto.fromJson(createdByRaw as Map<String, dynamic>);
+    }
+    return null;
+  }
+
+  UserDto? get nestedAssignedTo {
+    if (assignedToRaw is Map) {
+      return UserDto.fromJson(assignedToRaw as Map<String, dynamic>);
+    }
+    return null;
+  }
 
   factory TicketDto.fromJson(Map<String, dynamic> json) =>
       _$TicketDtoFromJson(json);
@@ -42,13 +72,13 @@ class TicketDto {
   Map<String, dynamic> toJson() => _$TicketDtoToJson(this);
 
   Ticket toEntity({
-    required User createdBy,
+    User? createdBy,
     User? assignedTo,
     List<Comment> comments = const [],
     List<TicketHistory> history = const [],
   }) {
     return Ticket(
-      id: int.tryParse(id) ?? id.hashCode,
+      id: id,
       title: title,
       description: description,
       status: TicketStatus.values.firstWhere(
@@ -60,8 +90,16 @@ class TicketDto {
         orElse: () => TicketPriority.medium,
       ),
       category: category,
-      createdBy: createdBy,
-      assignedTo: assignedTo,
+      createdBy: createdBy ?? nestedCreatedBy?.toEntity() ?? User(
+        id: createdById,
+        username: '',
+        fullName: 'Unknown',
+        email: '',
+        avatarUrl: '',
+        role: UserRole.user,
+        createdAt: createdAt,
+      ),
+      assignedTo: assignedTo ?? nestedAssignedTo?.toEntity(),
       attachmentUrls: attachmentUrls,
       comments: comments,
       history: history,
@@ -72,14 +110,14 @@ class TicketDto {
 
   static TicketDto fromEntity(Ticket entity) {
     return TicketDto(
-      id: entity.id.toString(),
+      id: entity.id,
       title: entity.title,
       description: entity.description,
       status: entity.status.name,
       priority: entity.priority.name,
       category: entity.category,
-      createdById: entity.createdBy.id.toString(),
-      assignedToId: entity.assignedTo?.id.toString(),
+      createdByRaw: entity.createdBy.id,
+      assignedToRaw: entity.assignedTo?.id,
       attachmentUrls: entity.attachmentUrls,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
