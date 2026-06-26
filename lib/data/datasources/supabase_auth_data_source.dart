@@ -40,6 +40,7 @@ class SupabaseAuthDataSource {
       'id': user.id,
       'username': username,
       'full_name': fullName,
+      'email': email,
       'avatar_url': '',
       'role': 'user',
     };

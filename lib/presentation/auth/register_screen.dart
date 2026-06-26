@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
-import '../../main.dart';
 import '../providers/auth_provider.dart';
-import '../dashboard/dashboard_screen.dart';
-import 'register_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
-  static const routeName = '/login';
+  static const routeName = '/register';
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
@@ -54,20 +56,25 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _animController.dispose();
     _emailController.dispose();
+    _usernameController.dispose();
+    _fullNameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.login(
-      _emailController.text.trim(),
-      _passwordController.text,
+    final success = await auth.register(
+      email: _emailController.text.trim(),
+      username: _usernameController.text.trim(),
+      fullName: _fullNameController.text.trim(),
+      password: _passwordController.text,
     );
 
     if (!mounted) return;
@@ -75,13 +82,30 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isLoading = false);
 
     if (success) {
-      final themeProvider = ThemeToggleProvider.of(context);
+      await auth.logout();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_outline_rounded,
+                    color: Color(0xFF86EFAC), size: 18),
+                SizedBox(width: 10),
+                Expanded(
+                    child: Text('Registrasi berhasil! Silakan masuk.')),
+              ],
+            ),
+            backgroundColor: const Color(0xFF14532D),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, animation, __) => DashboardScreen(
-            onThemeToggle: themeProvider?.toggleTheme ?? () {},
-            isDarkMode: themeProvider?.isDarkMode ?? false,
-          ),
+          pageBuilder: (_, animation, __) => const LoginScreen(),
           transitionsBuilder: (_, animation, __, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -89,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       );
     } else {
-      _showErrorSnackBar(auth.error ?? 'Login gagal. Silakan coba lagi.');
+      _showErrorSnackBar(auth.error ?? 'Registrasi gagal. Silakan coba lagi.');
     }
   }
 
@@ -111,8 +135,6 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       );
   }
-
-  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -139,25 +161,17 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: size.height * 0.08),
+                      SizedBox(height: size.height * 0.06),
 
-                      // ── Logo & Header ───────────────────────────────────
                       _buildHeader(isDark),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 28),
 
-                      // ── Form Card ───────────────────────────────────────
                       _buildFormCard(theme, isDark),
 
                       const SizedBox(height: 16),
 
-                      // ── Link Register ───────────────────────────────────
-                      _buildRegisterLink(isDark),
-
-                      const SizedBox(height: 16),
-
-                      // ── Hint Akun Demo ──────────────────────────────────
-                      _buildDemoHint(theme, isDark),
+                      _buildLoginLink(isDark),
 
                       const SizedBox(height: 32),
                     ],
@@ -171,13 +185,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ─── Sub-Widgets ──────────────────────────────────────────────────────────
-
   Widget _buildHeader(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Icon badge
         Container(
           width: 56,
           height: 56,
@@ -188,14 +199,14 @@ class _LoginScreenState extends State<LoginScreen>
                 color: AppTheme.accentCyan.withValues(alpha: 0.3), width: 1),
           ),
           child: const Icon(
-            Icons.confirmation_number_outlined,
+            Icons.person_add_outlined,
             color: AppTheme.accentCyan,
             size: 28,
           ),
         ),
         const SizedBox(height: 20),
         Text(
-          'Selamat\nDatang Kembali',
+          'Buat Akun\nBaru',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w800,
@@ -206,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Masuk ke akun E-Ticketing Helpdesk Anda',
+          'Daftar untuk membuat tiket bantuan',
           style: TextStyle(
             fontSize: 14,
             color: isDark
@@ -244,18 +255,7 @@ class _LoginScreenState extends State<LoginScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Email
-            Text(
-              'Email',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF475569),
-                letterSpacing: 0.2,
-              ),
-            ),
+            _buildLabel('Email', isDark),
             const SizedBox(height: 8),
             TextFormField(
               controller: _emailController,
@@ -280,27 +280,62 @@ class _LoginScreenState extends State<LoginScreen>
 
             const SizedBox(height: 20),
 
-            // Password
-            Text(
-              'Password',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF475569),
-                letterSpacing: 0.2,
+            _buildLabel('Username', isDark),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _usernameController,
+              textInputAction: TextInputAction.next,
+              autocorrect: false,
+              enabled: !_isLoading,
+              decoration: const InputDecoration(
+                hintText: 'Masukkan username',
+                prefixIcon: Icon(Icons.person_outline, size: 20),
               ),
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) {
+                  return 'Username tidak boleh kosong';
+                }
+                if (val.trim().length < 3) {
+                  return 'Username minimal 3 karakter';
+                }
+                return null;
+              },
             ),
+
+            const SizedBox(height: 20),
+
+            _buildLabel('Nama Lengkap', isDark),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _fullNameController,
+              textInputAction: TextInputAction.next,
+              enabled: !_isLoading,
+              decoration: const InputDecoration(
+                hintText: 'Masukkan nama lengkap',
+                prefixIcon: Icon(Icons.badge_outlined, size: 20),
+              ),
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) {
+                  return 'Nama lengkap tidak boleh kosong';
+                }
+                if (val.trim().length < 3) {
+                  return 'Nama lengkap minimal 3 karakter';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            _buildLabel('Password', isDark),
             const SizedBox(height: 8),
             TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
-              textInputAction: TextInputAction.done,
+              textInputAction: TextInputAction.next,
               enabled: !_isLoading,
-              onFieldSubmitted: (_) => _handleLogin(),
               decoration: InputDecoration(
-                hintText: 'Masukkan password',
+                hintText: 'Minimal 6 karakter',
                 prefixIcon:
                     const Icon(Icons.lock_outline_rounded, size: 20),
                 suffixIcon: IconButton(
@@ -312,8 +347,6 @@ class _LoginScreenState extends State<LoginScreen>
                         : Icons.visibility_outlined,
                     size: 20,
                   ),
-                  tooltip:
-                      _obscurePassword ? 'Tampilkan password' : 'Sembunyikan',
                 ),
               ),
               validator: (val) {
@@ -327,21 +360,70 @@ class _LoginScreenState extends State<LoginScreen>
               },
             ),
 
+            const SizedBox(height: 20),
+
+            _buildLabel('Konfirmasi Password', isDark),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirm,
+              textInputAction: TextInputAction.done,
+              enabled: !_isLoading,
+              onFieldSubmitted: (_) => _handleRegister(),
+              decoration: InputDecoration(
+                hintText: 'Ulangi password',
+                prefixIcon:
+                    const Icon(Icons.lock_outline_rounded, size: 20),
+                suffixIcon: IconButton(
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
+                ),
+              ),
+              validator: (val) {
+                if (val == null || val.isEmpty) {
+                  return 'Konfirmasi password tidak boleh kosong';
+                }
+                if (val != _passwordController.text) {
+                  return 'Password tidak cocok';
+                }
+                return null;
+              },
+            ),
+
             const SizedBox(height: 28),
 
-            // Tombol Login
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               child: _isLoading
                   ? _buildLoadingButton(isDark)
                   : ElevatedButton(
-                      key: const ValueKey('login-btn'),
-                      onPressed: _handleLogin,
-                      child: const Text('Masuk'),
+                      key: const ValueKey('register-btn'),
+                      onPressed: _handleRegister,
+                      child: const Text('Daftar'),
                     ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text, bool isDark) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: isDark
+            ? const Color(0xFF94A3B8)
+            : const Color(0xFF475569),
+        letterSpacing: 0.2,
       ),
     );
   }
@@ -368,13 +450,13 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildRegisterLink(bool isDark) {
+  Widget _buildLoginLink(bool isDark) {
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Belum punya akun? ',
+            'Sudah punya akun? ',
             style: TextStyle(
               fontSize: 13,
               color: isDark
@@ -386,7 +468,7 @@ class _LoginScreenState extends State<LoginScreen>
             onTap: () {
               Navigator.of(context).pushReplacement(
                 PageRouteBuilder(
-                  pageBuilder: (_, animation, __) => const RegisterScreen(),
+                  pageBuilder: (_, animation, __) => const LoginScreen(),
                   transitionsBuilder: (_, animation, __, child) {
                     return FadeTransition(opacity: animation, child: child);
                   },
@@ -395,75 +477,11 @@ class _LoginScreenState extends State<LoginScreen>
               );
             },
             child: Text(
-              'Daftar',
+              'Masuk',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.accentCyan.withValues(alpha: 0.9),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDemoHint(ThemeData theme, bool isDark) {
-    final hintColor = isDark
-        ? const Color(0xFF475569)
-        : const Color(0xFF94A3B8);
-    final accounts = [
-      ('admin@e-ticketing.demo', 'admin123', 'Admin'),
-      ('helpdesk@e-ticketing.demo', 'helpdesk123', 'Helpdesk'),
-      ('user@e-ticketing.demo', 'user123456', 'User'),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppTheme.accentCyan.withValues(alpha: 0.05)
-            : const Color(0xFFF0F9FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.accentCyan.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 15, color: AppTheme.accentCyan.withValues(alpha: 0.8)),
-              const SizedBox(width: 6),
-              Text(
-                'Akun Demo',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accentCyan.withValues(alpha: 0.9),
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...accounts.map(
-            (acc) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(fontSize: 12, color: hintColor, height: 1.5),
-                  children: [
-                    TextSpan(
-                      text: '${acc.$3}: ',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    TextSpan(text: '${acc.$1} / ${acc.$2}'),
-                  ],
-                ),
               ),
             ),
           ),

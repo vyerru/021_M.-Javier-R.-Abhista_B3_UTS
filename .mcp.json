@@ -1,0 +1,6 @@
+{
+  "supabase": {
+    "type": "supabase",
+    "url": "https://mcp.supabase.com/mcp"
+  }
+}
