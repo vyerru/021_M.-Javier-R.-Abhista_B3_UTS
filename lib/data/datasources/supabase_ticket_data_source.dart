@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ticket_dto.dart';
+import '../models/ticket_history_dto.dart';
 
 class SupabaseTicketDataSource {
   final SupabaseClient client;
@@ -52,10 +53,10 @@ class SupabaseTicketDataSource {
     return TicketDto.fromJson(data);
   }
 
-  Future<TicketDto> assignTicket(String ticketId, String assigneeId) async {
+  Future<TicketDto> assignAndSetInProgress(String ticketId, String assigneeId) async {
     final data = await client
         .from('tickets')
-        .update({'assigned_to': assigneeId})
+        .update({'assigned_to': assigneeId, 'status': 'inprogress'})
         .eq('id', ticketId)
         .select('*, created_by:users!created_by(*), assigned_to:users!assigned_to(*)')
         .single();
@@ -84,9 +85,21 @@ class SupabaseTicketDataSource {
     final data = await client
         .from('users')
         .select()
-        .inFilter('role', ['helpdesk', 'admin'])
+        .eq('role', 'helpdesk')
         .order('full_name');
     return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<TicketHistoryDto>> getHistory(String ticketId) async {
+    final data = await client
+        .from('ticket_history')
+        .select('*, changed_by:users!changed_by(*)')
+        .eq('ticket_id', ticketId)
+        .order('created_at', ascending: true);
+
+    return (data as List)
+        .map((e) => TicketHistoryDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> addHistory(Map<String, dynamic> historyData) async {

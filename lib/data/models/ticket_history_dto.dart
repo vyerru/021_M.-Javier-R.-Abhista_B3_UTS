@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/entities.dart';
+import 'user_dto.dart';
 
 part 'ticket_history_dto.g.dart';
 
@@ -9,18 +10,19 @@ class TicketHistoryDto {
   @JsonKey(name: 'ticket_id')
   final String ticketId;
   @JsonKey(name: 'changed_by')
-  final String changedById;
+  final dynamic changedByRaw;
   final String action;
   @JsonKey(name: 'from_status')
   final String? fromStatus;
   @JsonKey(name: 'to_status')
   final String? toStatus;
+  @JsonKey(name: 'created_at')
   final DateTime timestamp;
 
   const TicketHistoryDto({
     required this.id,
     required this.ticketId,
-    required this.changedById,
+    required this.changedByRaw,
     required this.action,
     this.fromStatus,
     this.toStatus,
@@ -32,11 +34,34 @@ class TicketHistoryDto {
 
   Map<String, dynamic> toJson() => _$TicketHistoryDtoToJson(this);
 
-  TicketHistory toEntity({required User changedBy}) {
+  String get changedById {
+    if (changedByRaw is Map) {
+      return (changedByRaw as Map)['id'] as String;
+    }
+    return changedByRaw as String;
+  }
+
+  UserDto? get nestedChangedBy {
+    if (changedByRaw is Map) {
+      return UserDto.fromJson(changedByRaw as Map<String, dynamic>);
+    }
+    return null;
+  }
+
+  TicketHistory toEntity({User? changedBy}) {
+    final resolvedChangedBy = changedBy ?? nestedChangedBy?.toEntity() ?? User(
+      id: changedById,
+      username: '',
+      fullName: 'Unknown',
+      email: '',
+      avatarUrl: '',
+      role: UserRole.user,
+      createdAt: timestamp,
+    );
     return TicketHistory(
       id: id,
       ticketId: ticketId,
-      changedBy: changedBy,
+      changedBy: resolvedChangedBy,
       action: action,
       fromStatus: fromStatus != null
           ? TicketStatus.values.firstWhere(
@@ -58,7 +83,7 @@ class TicketHistoryDto {
     return TicketHistoryDto(
       id: entity.id,
       ticketId: entity.ticketId,
-      changedById: entity.changedBy.id,
+      changedByRaw: entity.changedBy.id,
       action: entity.action,
       fromStatus: entity.fromStatus?.name,
       toStatus: entity.toStatus?.name,

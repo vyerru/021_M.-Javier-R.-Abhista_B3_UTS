@@ -1,6 +1,7 @@
 import '../../domain/entities/comment.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/ticket.dart';
+import '../../domain/entities/ticket_history.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/ticket_repository.dart';
 import '../datasources/supabase_comment_data_source.dart';
@@ -25,7 +26,8 @@ class TicketRepositoryImpl implements TicketRepository {
     final tickets = <Ticket>[];
     for (final dto in dtoList) {
       final comments = await _fetchComments(dto.id);
-      tickets.add(dto.toEntity(comments: comments));
+      final history = await _fetchHistory(dto.id);
+      tickets.add(dto.toEntity(comments: comments, history: history));
     }
     return tickets;
   }
@@ -34,7 +36,8 @@ class TicketRepositoryImpl implements TicketRepository {
   Future<Ticket> getTicketById(String id) async {
     final dto = await _ticketDataSource.getTicketById(id);
     final comments = await _fetchComments(dto.id);
-    return dto.toEntity(comments: comments);
+    final history = await _fetchHistory(dto.id);
+    return dto.toEntity(comments: comments, history: history);
   }
 
   @override
@@ -64,34 +67,29 @@ class TicketRepositoryImpl implements TicketRepository {
       newStatus.name,
     );
     final comments = await _fetchComments(dto.id);
+    final history = await _fetchHistory(dto.id);
 
-    final changedBy = _ticketDataSource.client.auth.currentUser?.id ?? dto.createdById;
-    await _ticketDataSource.addHistory({
-      'ticket_id': ticketId,
-      'changed_by': changedBy,
-      'action': 'Status changed to ${newStatus.label}',
-      'to_status': newStatus.name,
-    });
-
-    return dto.toEntity(comments: comments);
+    return dto.toEntity(comments: comments, history: history);
   }
 
   @override
   Future<Ticket> assignTicket(String ticketId, String assigneeId) async {
-    final dto = await _ticketDataSource.assignTicket(
+    final dto = await _ticketDataSource.assignAndSetInProgress(
       ticketId,
       assigneeId,
     );
     final comments = await _fetchComments(dto.id);
+    final history = await _fetchHistory(dto.id);
     final assignedTo = dto.nestedAssignedTo?.toEntity();
     final changedBy = _ticketDataSource.client.auth.currentUser?.id ?? dto.createdById;
     await _ticketDataSource.addHistory({
       'ticket_id': ticketId,
       'changed_by': changedBy,
-      'action': 'Assigned to ${assignedTo?.fullName ?? 'unknown'}',
+      'action': 'Ditugaskan ke ${assignedTo?.fullName ?? 'petugas'}',
+      'to_status': 'inprogress',
     });
 
-    return dto.toEntity(comments: comments);
+    return dto.toEntity(comments: comments, history: history);
   }
 
   @override
@@ -110,6 +108,15 @@ class TicketRepositoryImpl implements TicketRepository {
   Future<List<Comment>> _fetchComments(String ticketId) async {
     try {
       final dtoList = await _commentDataSource.getComments(ticketId);
+      return dtoList.map((dto) => dto.toEntity()).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<TicketHistory>> _fetchHistory(String ticketId) async {
+    try {
+      final dtoList = await _ticketDataSource.getHistory(ticketId);
       return dtoList.map((dto) => dto.toEntity()).toList();
     } catch (_) {
       return [];
