@@ -807,8 +807,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildCommentInput(Ticket ticket) {
     final theme = Theme.of(context);
-    final isResolved = ticket.status == TicketStatus.resolved ||
-        ticket.status == TicketStatus.closed;
+    final isResolved = ticket.status == TicketStatus.closed;
 
     return Container(
       decoration: BoxDecoration(

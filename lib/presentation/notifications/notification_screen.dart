@@ -128,7 +128,7 @@ class _NotificationCard extends StatelessWidget {
   const _NotificationCard({required this.notification, required this.isDark, required this.onTap});
 
   IconData get _icon => notification.title == 'Tiket Baru' ? Icons.add_circle_outline_rounded : Icons.swap_horiz_rounded;
-  Color get _iconColor => notification.title == 'Tiket Baru' ? AppTheme.statusResolved : AppTheme.accentCyan;
+  Color get _iconColor => notification.title == 'Tiket Baru' ? AppTheme.statusAssign : AppTheme.accentCyan;
 
   @override
   Widget build(BuildContext context) {

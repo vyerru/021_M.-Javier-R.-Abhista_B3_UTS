@@ -1,17 +1,17 @@
 enum TicketStatus {
   open,
-  inProgress,
-  resolved,
+  assign,
+  inprogress,
   closed;
 
   String get label {
     switch (this) {
       case TicketStatus.open:
         return 'Open';
-      case TicketStatus.inProgress:
+      case TicketStatus.assign:
+        return 'Assign';
+      case TicketStatus.inprogress:
         return 'In Progress';
-      case TicketStatus.resolved:
-        return 'Resolved';
       case TicketStatus.closed:
         return 'Closed';
     }

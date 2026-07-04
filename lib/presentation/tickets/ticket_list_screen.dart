@@ -92,8 +92,8 @@ class _TicketListScreenState extends State<TicketListScreen> {
   bool get _selectedNavBarVisible => true;
 
   Widget _buildStatusFilter(bool isDark) {
-    final statuses = <TicketStatus?>[null, TicketStatus.open, TicketStatus.inProgress, TicketStatus.resolved, TicketStatus.closed];
-    final labels = ['Semua', 'Open', 'In Progress', 'Resolved', 'Closed'];
+    final statuses = <TicketStatus?>[null, TicketStatus.open, TicketStatus.assign, TicketStatus.inprogress, TicketStatus.closed];
+    final labels = ['Semua', 'Open', 'Assign', 'In Progress', 'Closed'];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

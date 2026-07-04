@@ -74,8 +74,8 @@ class SupabaseTicketDataSource {
     return {
       'total': (row['total'] as num).toInt(),
       'open': (row['open'] as num).toInt(),
-      'inProgress': (row['inProgress'] as num).toInt(),
-      'resolved': (row['resolved'] as num).toInt(),
+      'inprogress': (row['inprogress'] as num).toInt(),
+      'assign': (row['assign'] as num).toInt(),
       'closed': (row['closed'] as num).toInt(),
     };
   }

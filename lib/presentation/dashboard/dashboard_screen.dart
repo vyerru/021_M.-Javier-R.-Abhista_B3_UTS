@@ -44,8 +44,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const List<_StatCard> _statCards = [
     _StatCard(label: 'Total Tiket', key: 'total', icon: Icons.confirmation_number_rounded, color: AppTheme.accentCyan),
     _StatCard(label: 'Open', key: 'open', icon: Icons.radio_button_unchecked_rounded, color: AppTheme.statusOpen),
-    _StatCard(label: 'In Progress', key: 'inProgress', icon: Icons.autorenew_rounded, color: AppTheme.statusInProgress),
-    _StatCard(label: 'Resolved', key: 'resolved', icon: Icons.check_circle_outline_rounded, color: AppTheme.statusResolved),
+    _StatCard(label: 'In Progress', key: 'inprogress', icon: Icons.autorenew_rounded, color: AppTheme.statusInProgress),
+    _StatCard(label: 'Assign', key: 'assign', icon: Icons.assignment_return_rounded, color: AppTheme.statusAssign),
     _StatCard(label: 'Closed', key: 'closed', icon: Icons.archive_outlined, color: AppTheme.statusClosed),
   ];
 

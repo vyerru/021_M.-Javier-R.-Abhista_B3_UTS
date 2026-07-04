@@ -20,8 +20,8 @@ abstract final class AppTheme {
 
   // Status tiket
   static const Color statusOpen = Color(0xFFEF4444);       // Merah
+  static const Color statusAssign = Color(0xFF8B5CF6);     // Ungu
   static const Color statusInProgress = Color(0xFFF59E0B); // Amber
-  static const Color statusResolved = Color(0xFF10B981);   // Hijau emerald
   static const Color statusClosed = Color(0xFF6B7280);     // Abu
 
   // Neutral
@@ -351,11 +351,11 @@ abstract final class AppTheme {
     switch (status.toLowerCase()) {
       case 'open':
         return statusOpen.withValues(alpha: 0.12);
+      case 'assign':
+        return statusAssign.withValues(alpha: 0.12);
       case 'inprogress':
       case 'in progress':
         return statusInProgress.withValues(alpha: 0.12);
-      case 'resolved':
-        return statusResolved.withValues(alpha: 0.12);
       case 'closed':
         return statusClosed.withValues(alpha: 0.12);
       default:
@@ -363,16 +363,15 @@ abstract final class AppTheme {
     }
   }
 
-  /// Mengembalikan warna teks untuk label status tiket.
   static Color statusForegroundColor(String status) {
     switch (status.toLowerCase()) {
       case 'open':
         return statusOpen;
+      case 'assign':
+        return statusAssign;
       case 'inprogress':
       case 'in progress':
         return statusInProgress;
-      case 'resolved':
-        return statusResolved;
       case 'closed':
         return statusClosed;
       default:
