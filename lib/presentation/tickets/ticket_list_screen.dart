@@ -77,7 +77,8 @@ class _TicketListScreenState extends State<TicketListScreen> {
           ),
         ],
       ),
-      floatingActionButton: authProvider.currentUser?.role == UserRole.user
+      floatingActionButton: authProvider.currentUser?.role == UserRole.user ||
+              authProvider.currentUser?.role == UserRole.admin
           ? FloatingActionButton.extended(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateTicketScreen())).then((_) => _refresh()),
               backgroundColor: AppTheme.accentCyan,

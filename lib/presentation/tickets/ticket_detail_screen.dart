@@ -70,6 +70,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // ── Update status (admin/helpdesk) ───────────────────────────────────────────
 
   Future<void> _showUpdateStatusSheet(Ticket ticket) async {
+    final currentUser = context.read<AuthProvider>().currentUser;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final isHelpdesk = currentUser?.role == UserRole.helpdesk;
+    final available = _availableStatuses(ticket, isAdmin, isHelpdesk);
+
+    if (available.isEmpty) return;
+
     final selected = await showModalBottomSheet<TicketStatus>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -96,14 +103,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
                 ),
                 Text(
-                  'Ubah Status Tiket',
+                  isHelpdesk ? 'Selesaikan Tiket' : 'Ubah Status Tiket',
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: 12),
-                ...TicketStatus.values.map((status) {
-                  final isCurrent = ticket.status == status;
+                ...available.map((status) {
                   final fg = AppTheme.statusForegroundColor(status.label);
                   final bg = AppTheme.statusBackgroundColor(status.label);
                   return Padding(
@@ -112,7 +118,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       onTap: () => Navigator.pop(ctx, status),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      tileColor: isCurrent ? bg : Colors.transparent,
+                      tileColor: bg,
                       leading: Container(
                         width: 12,
                         height: 12,
@@ -124,15 +130,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       title: Text(
                         status.label,
                         style: TextStyle(
-                          fontWeight: isCurrent
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isCurrent ? fg : null,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
                         ),
                       ),
-                      trailing: isCurrent
-                          ? Icon(Icons.check_rounded, color: fg)
-                          : null,
                     ),
                   );
                 }),
@@ -288,6 +289,23 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  bool _canChangeStatus(Ticket ticket, bool isAdmin, bool isHelpdesk) {
+    if (isAdmin && ticket.status == TicketStatus.open) return true;
+    if (isHelpdesk && ticket.status == TicketStatus.inprogress) return true;
+    return false;
+  }
+
+  bool _canAssign(Ticket ticket) {
+    return ticket.status == TicketStatus.open ||
+        ticket.status == TicketStatus.assign;
+  }
+
+  List<TicketStatus> _availableStatuses(Ticket ticket, bool isAdmin, bool isHelpdesk) {
+    if (isAdmin && ticket.status == TicketStatus.open) return [TicketStatus.assign];
+    if (isHelpdesk && ticket.status == TicketStatus.inprogress) return [TicketStatus.closed];
+    return [];
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   //  BUILD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -296,8 +314,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Widget build(BuildContext context) {
     final ticketProvider = context.watch<TicketProvider>();
     final currentUser = context.watch<AuthProvider>().currentUser;
-    final isStaff = currentUser?.role == UserRole.admin ||
-        currentUser?.role == UserRole.helpdesk;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final isHelpdesk = currentUser?.role == UserRole.helpdesk;
+    final isStaff = isAdmin || isHelpdesk;
     final ticket = ticketProvider.selectedTicket;
     final isLoading = ticketProvider.isLoading && ticket == null;
     final error = ticketProvider.error;
@@ -314,26 +333,28 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 if (val == 'assign') _showAssignSheet(ticket);
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'status',
-                  child: Row(
-                    spacing: 12,
-                    children: [
-                      Icon(Icons.swap_horiz_rounded),
-                      Text('Ubah Status'),
-                    ],
+                if (_canChangeStatus(ticket, isAdmin, isHelpdesk))
+                  const PopupMenuItem(
+                    value: 'status',
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        Icon(Icons.swap_horiz_rounded),
+                        Text('Ubah Status'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'assign',
-                  child: Row(
-                    spacing: 12,
-                    children: [
-                      Icon(Icons.person_add_alt_1_rounded),
-                      Text('Assign Tiket'),
-                    ],
+                if (isAdmin && _canAssign(ticket))
+                  const PopupMenuItem(
+                    value: 'assign',
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        Icon(Icons.person_add_alt_1_rounded),
+                        Text('Assign Tiket'),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
         ],
@@ -523,34 +544,39 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   Widget _buildStaffActionsCard(Ticket ticket) {
+    final currentUser = context.read<AuthProvider>().currentUser;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final isHelpdesk = currentUser?.role == UserRole.helpdesk;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Wrap(
           spacing: 10,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed:
-                    _isSubmitting ? null : () => _showUpdateStatusSheet(ticket),
+            if (_canChangeStatus(ticket, isAdmin, isHelpdesk))
+              OutlinedButton.icon(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => _showUpdateStatusSheet(ticket),
                 icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                label: const Text('Ubah Status'),
+                label: Text(isHelpdesk ? 'Selesaikan Tiket' : 'Ubah Status'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(0, 44),
                 ),
               ),
-            ),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed:
-                    _isSubmitting ? null : () => _showAssignSheet(ticket),
+            if (isAdmin && _canAssign(ticket))
+              ElevatedButton.icon(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => _showAssignSheet(ticket),
                 icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
                 label: const Text('Assign'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(0, 44),
                 ),
               ),
-            ),
           ],
         ),
       ),
