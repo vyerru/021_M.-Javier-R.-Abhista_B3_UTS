@@ -8,6 +8,7 @@ import 'data/datasources/supabase_auth_data_source.dart';
 import 'data/datasources/supabase_comment_data_source.dart';
 import 'data/datasources/supabase_notification_data_source.dart';
 import 'data/datasources/supabase_ticket_data_source.dart';
+import 'data/datasources/supabase_storage_data_source.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/comment_repository_impl.dart';
 import 'data/repositories/notification_repository_impl.dart';
@@ -45,6 +46,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
   late final AuthProvider _authProvider;
   late final TicketProvider _ticketProvider;
   late final NotificationProvider _notificationProvider;
+  late final SupabaseStorageDataSource _storageDataSource;
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
     final ticketDataSource = SupabaseTicketDataSource(_supabase);
     final commentDataSource = SupabaseCommentDataSource(_supabase);
     final notificationDataSource = SupabaseNotificationDataSource(_supabase);
+    final storageDataSource = SupabaseStorageDataSource(_supabase);
 
     final authRepo = AuthRepositoryImpl(authDataSource);
     final notificationRepo = NotificationRepositoryImpl(notificationDataSource);
@@ -88,6 +91,8 @@ class _ETicketingAppState extends State<ETicketingApp> {
       markAsReadUseCase: MarkAsReadUseCase(notificationRepo),
       markAllAsReadUseCase: MarkAllAsReadUseCase(notificationRepo),
     );
+
+    _storageDataSource = storageDataSource;
   }
 
   void _toggleTheme() => setState(() => _isDarkMode = !_isDarkMode);
@@ -99,6 +104,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _ticketProvider),
         ChangeNotifierProvider.value(value: _notificationProvider),
+        Provider.value(value: _storageDataSource),
       ],
       child: MaterialApp(
         title: 'E-Ticketing Helpdesk',
