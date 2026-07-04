@@ -67,6 +67,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
       logoutUseCase: LogoutUseCase(authRepo),
       getCurrentUserUseCase: GetCurrentUserUseCase(authRepo),
       updateProfileUseCase: UpdateProfileUseCase(authRepo),
+      resetPasswordUseCase: ResetPasswordUseCase(authRepo),
     );
 
     _ticketProvider = TicketProvider(

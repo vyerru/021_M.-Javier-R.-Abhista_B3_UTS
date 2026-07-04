@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../providers/auth_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -339,6 +340,32 @@ class _LoginScreenState extends State<LoginScreen>
                       onPressed: _handleLogin,
                       child: const Text('Masuk'),
                     ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    PageRouteBuilder(
+                      pageBuilder: (_, animation, __) =>
+                          const ForgotPasswordScreen(),
+                      transitionsBuilder: (_, animation, __, child) {
+                        return FadeTransition(
+                            opacity: animation, child: child);
+                      },
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Lupa Password?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accentCyan.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

@@ -16,4 +16,5 @@ abstract class AuthRepository {
     required String username,
     String? avatarUrl,
   });
+  Future<void> resetPassword(String email);
 }

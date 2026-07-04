@@ -122,6 +122,16 @@ class SupabaseAuthDataSource {
     }
   }
 
+  Future<void> resetPassword(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      throw Exception(_mapAuthError(e.message));
+    } catch (e) {
+      throw Exception(_mapGenericError(e));
+    }
+  }
+
   String _mapAuthError(String message) {
     switch (message) {
       case 'Invalid login credentials':

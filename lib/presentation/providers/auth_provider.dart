@@ -8,6 +8,7 @@ class AuthProvider extends ChangeNotifier {
   final LogoutUseCase _logoutUseCase;
   final GetCurrentUserUseCase _getCurrentUserUseCase;
   final UpdateProfileUseCase _updateProfileUseCase;
+  final ResetPasswordUseCase _resetPasswordUseCase;
 
   User? _currentUser;
   bool _isLoading = false;
@@ -19,11 +20,13 @@ class AuthProvider extends ChangeNotifier {
     required LogoutUseCase logoutUseCase,
     required GetCurrentUserUseCase getCurrentUserUseCase,
     required UpdateProfileUseCase updateProfileUseCase,
+    required ResetPasswordUseCase resetPasswordUseCase,
   })  : _loginUseCase = loginUseCase,
         _registerUseCase = registerUseCase,
         _logoutUseCase = logoutUseCase,
         _getCurrentUserUseCase = getCurrentUserUseCase,
-        _updateProfileUseCase = updateProfileUseCase;
+        _updateProfileUseCase = updateProfileUseCase,
+        _resetPasswordUseCase = resetPasswordUseCase;
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -94,6 +97,24 @@ class AuthProvider extends ChangeNotifier {
     await _logoutUseCase.call();
     _currentUser = null;
     notifyListeners();
+  }
+
+  Future<bool> resetPassword(String email) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _resetPasswordUseCase.call(email);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> updateProfile({

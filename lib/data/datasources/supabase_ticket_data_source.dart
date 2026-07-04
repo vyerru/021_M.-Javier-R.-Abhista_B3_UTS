@@ -95,7 +95,7 @@ class SupabaseTicketDataSource {
         .from('ticket_history')
         .select('*, changed_by:users!changed_by(*)')
         .eq('ticket_id', ticketId)
-        .order('created_at', ascending: true);
+        .order('timestamp', ascending: true);
 
     return (data as List)
         .map((e) => TicketHistoryDto.fromJson(e as Map<String, dynamic>))

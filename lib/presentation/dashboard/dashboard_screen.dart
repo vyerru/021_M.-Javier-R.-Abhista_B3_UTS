@@ -9,7 +9,7 @@ import '../auth/login_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../profile/profile_screen.dart';
 import '../tickets/ticket_list_screen.dart';
-import '../tickets/tracking_screen.dart';
+import '../tickets/riwayat_screen.dart';
 
 class _StatCard {
   final String label;
@@ -111,7 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         index: _selectedNavIndex,
         children: [
           _buildDashboardContent(isDark, ticketProvider, user),
-          const TrackingScreen(),
+          const RiwayatScreen(),
           const TicketListScreen(),
           NotificationScreen(
             onCountChanged: (count) {},
@@ -334,9 +334,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'Dashboard',
         ),
         NavigationDestination(
-          icon: const Icon(Icons.route_outlined),
-          selectedIcon: Icon(Icons.route_rounded, color: AppTheme.accentCyan),
-          label: 'Tracking',
+          icon: const Icon(Icons.history_outlined),
+          selectedIcon: Icon(Icons.history_rounded, color: AppTheme.accentCyan),
+          label: 'Riwayat',
         ),
         NavigationDestination(
           icon: const Icon(Icons.confirmation_number_outlined),
