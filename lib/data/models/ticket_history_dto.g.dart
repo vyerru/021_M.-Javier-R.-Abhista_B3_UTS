@@ -14,7 +14,7 @@ TicketHistoryDto _$TicketHistoryDtoFromJson(Map<String, dynamic> json) =>
       action: json['action'] as String,
       fromStatus: json['from_status'] as String?,
       toStatus: json['to_status'] as String?,
-      timestamp: DateTime.parse(json['created_at'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String),
     );
 
 Map<String, dynamic> _$TicketHistoryDtoToJson(TicketHistoryDto instance) =>
@@ -25,5 +25,5 @@ Map<String, dynamic> _$TicketHistoryDtoToJson(TicketHistoryDto instance) =>
       'action': instance.action,
       'from_status': instance.fromStatus,
       'to_status': instance.toStatus,
-      'created_at': instance.timestamp.toIso8601String(),
+      'timestamp': instance.timestamp.toIso8601String(),
     };

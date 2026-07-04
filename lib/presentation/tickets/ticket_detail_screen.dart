@@ -4,6 +4,7 @@ import '../../domain/entities/entities.dart';
 import '../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/ticket_provider.dart';
+import 'ticket_history_screen.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
@@ -77,66 +78,135 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
     if (available.isEmpty) return;
 
-    final selected = await showModalBottomSheet<TicketStatus>(
+    final targetStatus = available.first;
+
+    final theme = Theme.of(context);
+    final currentFg = AppTheme.statusForegroundColor(ticket.status.label);
+    final currentBg = AppTheme.statusBackgroundColor(ticket.status.label);
+    final targetFg = AppTheme.statusForegroundColor(targetStatus.label);
+    final targetBg = AppTheme.statusBackgroundColor(targetStatus.label);
+
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 40,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                      color: Theme.of(ctx).dividerColor,
+                      color: theme.dividerColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 Text(
                   isHelpdesk ? 'Selesaikan Tiket' : 'Ubah Status Tiket',
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                ...available.map((status) {
-                  final fg = AppTheme.statusForegroundColor(status.label);
-                  final bg = AppTheme.statusBackgroundColor(status.label);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      onTap: () => Navigator.pop(ctx, status),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      tileColor: bg,
-                      leading: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: fg,
-                          shape: BoxShape.circle,
+                const SizedBox(height: 20),
+
+                // Current status
+                _StatusTransitionCard(
+                  label: 'Status Saat Ini',
+                  statusLabel: ticket.status.label,
+                  fg: currentFg,
+                  bg: currentBg,
+                  icon: Icons.radio_button_unchecked_rounded,
+                ),
+
+                // Arrow down
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Icon(
+                    Icons.arrow_downward_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
+                ),
+
+                // Target status
+                _StatusTransitionCard(
+                  label: isHelpdesk
+                      ? 'Tandai selesai'
+                      : 'Tandai untuk diassign',
+                  statusLabel: targetStatus.label,
+                  fg: targetFg,
+                  bg: targetBg,
+                  icon: Icons.check_circle_outline_rounded,
+                ),
+
+                // Description
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 20),
+                  child: Text(
+                    isHelpdesk
+                        ? 'Tiket akan ditutup dan admin akan mendapat notifikasi'
+                        : 'Helpdesk akan dapat mengerjakan tiket ini setelah diassign',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                const SizedBox(height: 16),
+
+                // Action buttons
+                Row(
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
+                        child: const Text('Batal'),
                       ),
-                      title: Text(
-                        status.label,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: fg,
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        icon: Icon(
+                          isHelpdesk
+                              ? Icons.check_rounded
+                              : Icons.arrow_forward_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          isHelpdesk ? 'Selesaikan' : 'Konfirmasi',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: targetFg,
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ),
-                  );
-                }),
+                  ],
+                ),
               ],
             ),
           ),
@@ -144,16 +214,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       },
     );
 
-    if (selected == null || selected == ticket.status) return;
+    if (confirmed != true) return;
 
     setState(() => _isSubmitting = true);
     final provider = context.read<TicketProvider>();
     final ok = await provider.updateStatus(
       widget.ticketId,
-      selected,
+      targetStatus,
     );
     if (ok) {
-      _showSnackbar('Status berhasil diubah ke ${selected.label}');
+      _showSnackbar('Status berhasil diubah ke ${targetStatus.label}');
     }
     if (mounted) setState(() => _isSubmitting = false);
   }
@@ -296,8 +366,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   bool _canAssign(Ticket ticket) {
-    return ticket.status == TicketStatus.open ||
-        ticket.status == TicketStatus.assign;
+    return ticket.status == TicketStatus.assign;
   }
 
   List<TicketStatus> _availableStatuses(Ticket ticket, bool isAdmin, bool isHelpdesk) {
@@ -696,6 +765,25 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
           ),
         ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TicketHistoryScreen(ticketId: ticket.id),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history_rounded, size: 16),
+            label: const Text('Lihat Riwayat Lengkap'),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -886,6 +974,70 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       ),
                     ),
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Helper Widget: Status Transition Card ─────────────────────────────────────
+
+class _StatusTransitionCard extends StatelessWidget {
+  final String label;
+  final String statusLabel;
+  final Color fg;
+  final Color bg;
+  final IconData icon;
+
+  const _StatusTransitionCard({
+    required this.label,
+    required this.statusLabel,
+    required this.fg,
+    required this.bg,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: fg.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        spacing: 12,
+        children: [
+          Icon(icon, color: fg, size: 22),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: fg,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

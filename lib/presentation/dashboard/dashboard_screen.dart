@@ -9,6 +9,7 @@ import '../auth/login_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../profile/profile_screen.dart';
 import '../tickets/ticket_list_screen.dart';
+import '../tickets/tracking_screen.dart';
 
 class _StatCard {
   final String label;
@@ -110,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         index: _selectedNavIndex,
         children: [
           _buildDashboardContent(isDark, ticketProvider, user),
+          const TrackingScreen(),
           const TicketListScreen(),
           NotificationScreen(
             onCountChanged: (count) {},
@@ -237,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy, letterSpacing: -0.2)),
         if (trailing != null)
           GestureDetector(
-            onTap: () => setState(() => _selectedNavIndex = 1),
+            onTap: () => setState(() => _selectedNavIndex = 2),
             child: Text(trailing, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentCyan)),
           ),
       ],
@@ -330,6 +332,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: const Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard_rounded, color: AppTheme.accentCyan),
           label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.route_outlined),
+          selectedIcon: Icon(Icons.route_rounded, color: AppTheme.accentCyan),
+          label: 'Tracking',
         ),
         NavigationDestination(
           icon: const Icon(Icons.confirmation_number_outlined),

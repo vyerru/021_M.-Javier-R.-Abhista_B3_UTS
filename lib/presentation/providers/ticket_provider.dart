@@ -19,6 +19,7 @@ class TicketProvider extends ChangeNotifier {
   final GetCommentsUseCase _getCommentsUseCase;
 
   List<Ticket> _tickets = [];
+  List<Ticket> _activeTickets = [];
   Ticket? _selectedTicket;
   Map<String, int>? _statistics;
   List<User> _helpdeskUsers = [];
@@ -47,6 +48,7 @@ class TicketProvider extends ChangeNotifier {
         _getCommentsUseCase = getCommentsUseCase;
 
   List<Ticket> get tickets => _tickets;
+  List<Ticket> get activeTickets => _activeTickets;
   Ticket? get selectedTicket => _selectedTicket;
   Map<String, int>? get statistics => _statistics;
   List<User> get helpdeskUsers => _helpdeskUsers;
@@ -62,6 +64,22 @@ class TicketProvider extends ChangeNotifier {
     try {
       _selectedStatus = statusFilter;
       _tickets = await _getTicketsUseCase.call(statusFilter: statusFilter);
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadActiveTickets() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final all = await _getTicketsUseCase.call();
+      _activeTickets = all.where((t) => t.status != TicketStatus.closed).toList();
     } catch (e) {
       _error = e.toString();
     }

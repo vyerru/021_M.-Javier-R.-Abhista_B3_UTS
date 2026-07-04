@@ -16,7 +16,7 @@ class TicketHistoryDto {
   final String? fromStatus;
   @JsonKey(name: 'to_status')
   final String? toStatus;
-  @JsonKey(name: 'created_at')
+  @JsonKey(name: 'timestamp')
   final DateTime timestamp;
 
   const TicketHistoryDto({
