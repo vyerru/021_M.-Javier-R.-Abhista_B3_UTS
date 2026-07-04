@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../domain/entities/entities.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
+import '../../domain/entities/entities.dart';
+import '../../data/datasources/supabase_storage_data_source.dart';
 import '../providers/auth_provider.dart';
 import '../providers/ticket_provider.dart';
 
@@ -16,13 +20,14 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final _picker = ImagePicker();
 
   String _selectedCategory = 'Hardware';
   final List<String> _categories = ['Hardware', 'Software', 'Network', 'Account'];
 
   TicketPriority _selectedPriority = TicketPriority.medium;
 
-  bool _hasAttachment = false;
+  List<File> _selectedFiles = [];
   bool _isLoading = false;
 
   @override
@@ -32,6 +37,96 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFromCamera() async {
+    final xFile = await _picker.pickImage(source: ImageSource.camera);
+    if (xFile != null) {
+      setState(() => _selectedFiles.add(File(xFile.path)));
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final xFiles = await _picker.pickMultiImage();
+    for (final xFile in xFiles) {
+      setState(() => _selectedFiles.add(File(xFile.path)));
+    }
+  }
+
+  Future<void> _pickFromFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'],
+      allowMultiple: true,
+    );
+    if (result != null) {
+      for (final file in result.files) {
+        if (file.path != null) {
+          setState(() => _selectedFiles.add(File(file.path!)));
+        }
+      }
+    }
+  }
+
+  void _showFileSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).dividerColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Tambah Lampiran',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined, color: AppTheme.accentCyan),
+                  title: const Text('Kamera'),
+                  onTap: () { Navigator.pop(ctx); _pickFromCamera(); },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined, color: AppTheme.accentCyan),
+                  title: const Text('Galeri'),
+                  onTap: () { Navigator.pop(ctx); _pickFromGallery(); },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.insert_drive_file_outlined, color: AppTheme.accentCyan),
+                  title: const Text('File Manager'),
+                  onTap: () { Navigator.pop(ctx); _pickFromFiles(); },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _removeFile(int index) {
+    setState(() => _selectedFiles.removeAt(index));
+  }
+
+  String _fileIcon(File file) {
+    final ext = file.path.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) return 'image';
+    if (ext == 'pdf') return 'pdf';
+    return 'file';
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -39,30 +134,50 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
 
     final auth = context.read<AuthProvider>();
     final ticketProvider = context.read<TicketProvider>();
+    final storage = context.read<SupabaseStorageDataSource>();
 
-    final ticket = Ticket(
-      id: '',
-      title: _titleController.text.trim(),
-      description: _descController.text.trim(),
-      status: TicketStatus.open,
-      priority: _selectedPriority,
-      category: _selectedCategory,
-      createdBy: auth.currentUser!,
-      attachmentUrls: _hasAttachment ? ['mock_attachment.pdf'] : [],
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    try {
+      final ticket = Ticket(
+        id: '',
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        status: TicketStatus.open,
+        priority: _selectedPriority,
+        category: _selectedCategory,
+        createdBy: auth.currentUser!,
+        attachmentUrls: [],
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-    final success = await ticketProvider.createTicket(ticket);
+      final created = await ticketProvider.createTicket(ticket);
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      if (!mounted) return;
 
-    if (success) {
-      Navigator.pop(context, true);
-    } else {
+      if (created != null) {
+        if (_selectedFiles.isNotEmpty) {
+          await storage.uploadFiles(
+            files: _selectedFiles,
+            ticketId: created.id,
+          );
+        }
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ticketProvider.error ?? 'Gagal membuat tiket'),
+            backgroundColor: const Color(0xFF7F1D1D),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ticketProvider.error ?? 'Gagal membuat tiket'), backgroundColor: const Color(0xFF7F1D1D)),
+        SnackBar(
+          content: Text('Gagal mengupload file: $e'),
+          backgroundColor: const Color(0xFF7F1D1D),
+        ),
       );
     }
   }
@@ -120,20 +235,88 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Deskripsi tidak boleh kosong' : null,
             ),
             const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Lampirkan File', style: TextStyle(fontSize: 14)),
-              subtitle: const Text('mock_attachment.pdf', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
-              value: _hasAttachment,
-              onChanged: !_isLoading ? (v) => setState(() => _hasAttachment = v) : null,
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppTheme.accentCyan,
+
+            // File attachments
+            Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.attach_file_rounded, size: 18, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                Text('Lampiran (${_selectedFiles.length})',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _isLoading ? null : _showFileSourceSheet,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Tambah', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                ),
+              ],
             ),
-            const SizedBox(height: 28),
+            if (_selectedFiles.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedFiles.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final file = _selectedFiles[index];
+                    final icon = _fileIcon(file);
+
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 80, height: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: icon == 'image'
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(file, fit: BoxFit.cover),
+                                )
+                              : Center(
+                                  child: Icon(
+                                    icon == 'pdf'
+                                        ? Icons.picture_as_pdf_rounded
+                                        : Icons.insert_drive_file_rounded,
+                                    size: 32,
+                                    color: AppTheme.accentCyan.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                        ),
+                        Positioned(
+                          top: -4, right: -4,
+                          child: GestureDetector(
+                            onTap: () => _removeFile(index),
+                            child: Container(
+                              width: 22, height: 22,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDC2626),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSubmit,
-                child: _isLoading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)) : const Text('Buat Tiket'),
+                child: _isLoading
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    : const Text('Buat Tiket'),
               ),
             ),
           ]),

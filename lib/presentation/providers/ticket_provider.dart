@@ -103,21 +103,21 @@ class TicketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> createTicket(Ticket ticket) async {
+  Future<Ticket?> createTicket(Ticket ticket) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _createTicketUseCase.call(ticket);
+      final created = await _createTicketUseCase.call(ticket);
       _isLoading = false;
       notifyListeners();
-      return true;
+      return created;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

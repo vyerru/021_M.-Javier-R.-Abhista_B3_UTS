@@ -50,6 +50,10 @@ dependencies:
   # Value Equality
   equatable: ^2.0.7
 
+  # File Picker & Camera
+  image_picker: ^1.1.2
+  file_picker: ^8.1.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
