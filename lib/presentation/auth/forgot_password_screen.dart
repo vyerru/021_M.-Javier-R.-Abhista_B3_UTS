@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
+import 'new_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -76,12 +77,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         );
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, animation, __) => const LoginScreen(),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 350),
+        MaterialPageRoute(
+          builder: (_) => NewPasswordScreen(
+            email: _emailController.text.trim(),
+          ),
         ),
       );
     } else {
