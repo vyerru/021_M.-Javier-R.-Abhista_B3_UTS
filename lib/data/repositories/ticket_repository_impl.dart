@@ -105,6 +105,11 @@ class TicketRepositoryImpl implements TicketRepository {
         .toList();
   }
 
+  @override
+  Future<void> updateAttachmentUrls(String ticketId, List<String> urls) async {
+    await _ticketDataSource.updateAttachmentUrls(ticketId, urls);
+  }
+
   Future<List<Comment>> _fetchComments(String ticketId) async {
     try {
       final dtoList = await _commentDataSource.getComments(ticketId);

@@ -83,6 +83,7 @@ class _ETicketingAppState extends State<ETicketingApp> {
       getHelpdeskUsersUseCase: GetHelpdeskUsersUseCase(ticketRepo),
       addCommentUseCase: AddCommentUseCase(commentRepo),
       getCommentsUseCase: GetCommentsUseCase(commentRepo),
+      updateAttachmentUrlsUseCase: UpdateAttachmentUrlsUseCase(ticketRepo),
     );
 
     _notificationProvider = NotificationProvider(

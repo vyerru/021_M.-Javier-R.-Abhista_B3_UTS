@@ -8,6 +8,7 @@ abstract class TicketRepository {
   Future<Ticket> createTicket(Ticket ticket);
   Future<Ticket> updateTicketStatus(String ticketId, TicketStatus newStatus);
   Future<Ticket> assignTicket(String ticketId, String assigneeId);
+  Future<void> updateAttachmentUrls(String ticketId, List<String> urls);
   Future<Map<String, int>> getStatistics({String? userId});
   Future<List<User>> getHelpdeskUsers();
 }

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,7 +26,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
 
   TicketPriority _selectedPriority = TicketPriority.medium;
 
-  List<File> _selectedFiles = [];
+  List<UploadFileData> _selectedFiles = [];
   bool _isLoading = false;
 
   @override
@@ -39,15 +38,18 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
 
   Future<void> _pickFromCamera() async {
     final xFile = await _picker.pickImage(source: ImageSource.camera);
-    if (xFile != null) {
-      setState(() => _selectedFiles.add(File(xFile.path)));
-    }
+    if (xFile == null) return;
+    final bytes = await xFile.readAsBytes();
+    final ext = xFile.name.split('.').last;
+    setState(() => _selectedFiles.add(UploadFileData(bytes: bytes, ext: ext)));
   }
 
   Future<void> _pickFromGallery() async {
     final xFiles = await _picker.pickMultiImage();
     for (final xFile in xFiles) {
-      setState(() => _selectedFiles.add(File(xFile.path)));
+      final bytes = await xFile.readAsBytes();
+      final ext = xFile.name.split('.').last;
+      setState(() => _selectedFiles.add(UploadFileData(bytes: bytes, ext: ext)));
     }
   }
 
@@ -56,13 +58,14 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'],
       allowMultiple: true,
+      withData: true,
     );
-    if (result != null) {
-      for (final file in result.files) {
-        if (file.path != null) {
-          setState(() => _selectedFiles.add(File(file.path!)));
-        }
-      }
+    if (result == null) return;
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null) continue;
+      final ext = file.extension ?? 'file';
+      setState(() => _selectedFiles.add(UploadFileData(bytes: bytes, ext: ext)));
     }
   }
 
@@ -120,13 +123,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     setState(() => _selectedFiles.removeAt(index));
   }
 
-  String _fileIcon(File file) {
-    final ext = file.path.split('.').last.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) return 'image';
-    if (ext == 'pdf') return 'pdf';
-    return 'file';
-  }
-
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -151,15 +147,15 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       );
 
       final created = await ticketProvider.createTicket(ticket);
-
       if (!mounted) return;
 
       if (created != null) {
         if (_selectedFiles.isNotEmpty) {
-          await storage.uploadFiles(
+          final urls = await storage.uploadFiles(
             files: _selectedFiles,
             ticketId: created.id,
           );
+          await ticketProvider.updateAttachmentUrls(created.id, urls);
         }
         Navigator.pop(context, true);
       } else {
@@ -172,7 +168,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal mengupload file: $e'),
@@ -180,6 +175,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         ),
       );
     }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -236,7 +232,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
             ),
             const SizedBox(height: 16),
 
-            // File attachments
             Row(
               spacing: 8,
               children: [
@@ -263,7 +258,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final file = _selectedFiles[index];
-                    final icon = _fileIcon(file);
+                    final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(file.ext);
 
                     return Stack(
                       children: [
@@ -273,14 +268,14 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: theme.dividerColor),
                           ),
-                          child: icon == 'image'
+                          child: isImage
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(file, fit: BoxFit.cover),
+                                  child: Image.memory(file.bytes, fit: BoxFit.cover),
                                 )
                               : Center(
                                   child: Icon(
-                                    icon == 'pdf'
+                                    file.ext == 'pdf'
                                         ? Icons.picture_as_pdf_rounded
                                         : Icons.insert_drive_file_rounded,
                                     size: 32,
@@ -295,8 +290,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                             child: Container(
                               width: 22, height: 22,
                               decoration: const BoxDecoration(
-                                color: Color(0xFFDC2626),
-                                shape: BoxShape.circle,
+                                color: Color(0xFFDC2626), shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
                             ),

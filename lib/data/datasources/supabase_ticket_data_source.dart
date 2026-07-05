@@ -64,6 +64,13 @@ class SupabaseTicketDataSource {
     return TicketDto.fromJson(data);
   }
 
+  Future<void> updateAttachmentUrls(String ticketId, List<String> urls) async {
+    await client
+        .from('tickets')
+        .update({'attachment_urls': urls})
+        .eq('id', ticketId);
+  }
+
   Future<Map<String, int>> getStatistics({String? userId}) async {
     final params = <String, dynamic>{};
     if (userId != null) {

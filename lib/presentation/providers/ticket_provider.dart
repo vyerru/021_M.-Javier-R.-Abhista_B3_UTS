@@ -15,6 +15,7 @@ class TicketProvider extends ChangeNotifier {
   final AssignTicketUseCase _assignTicketUseCase;
   final GetStatisticsUseCase _getStatisticsUseCase;
   final GetHelpdeskUsersUseCase _getHelpdeskUsersUseCase;
+  final UpdateAttachmentUrlsUseCase _updateAttachmentUrlsUseCase;
   final AddCommentUseCase _addCommentUseCase;
   final GetCommentsUseCase _getCommentsUseCase;
 
@@ -37,6 +38,7 @@ class TicketProvider extends ChangeNotifier {
     required GetHelpdeskUsersUseCase getHelpdeskUsersUseCase,
     required AddCommentUseCase addCommentUseCase,
     required GetCommentsUseCase getCommentsUseCase,
+    required UpdateAttachmentUrlsUseCase updateAttachmentUrlsUseCase,
   })  : _getTicketsUseCase = getTicketsUseCase,
         _getTicketByIdUseCase = getTicketByIdUseCase,
         _createTicketUseCase = createTicketUseCase,
@@ -45,7 +47,8 @@ class TicketProvider extends ChangeNotifier {
         _getStatisticsUseCase = getStatisticsUseCase,
         _getHelpdeskUsersUseCase = getHelpdeskUsersUseCase,
         _addCommentUseCase = addCommentUseCase,
-        _getCommentsUseCase = getCommentsUseCase;
+        _getCommentsUseCase = getCommentsUseCase,
+        _updateAttachmentUrlsUseCase = updateAttachmentUrlsUseCase;
 
   List<Ticket> get tickets => _tickets;
   List<Ticket> get activeTickets => _activeTickets;
@@ -194,5 +197,14 @@ class TicketProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  Future<void> updateAttachmentUrls(String ticketId, List<String> urls) async {
+    try {
+      await _updateAttachmentUrlsUseCase.call(ticketId, urls);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 }
