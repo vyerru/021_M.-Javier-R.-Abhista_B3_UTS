@@ -219,6 +219,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   if (!val.contains('@')) {
                                     return 'Format email tidak valid';
                                   }
+                                  final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                                  if (!emailRegex.hasMatch(val)) {
+                                    return 'Format email tidak valid';
+                                  }
                                   return null;
                                 },
                               ),

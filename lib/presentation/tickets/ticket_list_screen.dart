@@ -78,7 +78,8 @@ class _TicketListScreenState extends State<TicketListScreen> {
         ],
       ),
       floatingActionButton: authProvider.currentUser?.role == UserRole.user ||
-              authProvider.currentUser?.role == UserRole.admin
+              authProvider.currentUser?.role == UserRole.admin ||
+              authProvider.currentUser?.role == UserRole.helpdesk
           ? FloatingActionButton.extended(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateTicketScreen())).then((_) => _refresh()),
               backgroundColor: AppTheme.accentCyan,
@@ -235,17 +236,45 @@ class _Tag extends StatelessWidget {
   }
 }
 
-class _SkeletonCard extends StatelessWidget {
+class _SkeletonCard extends StatefulWidget {
   final bool isDark;
   const _SkeletonCard({required this.isDark});
 
   @override
+  State<_SkeletonCard> createState() => _SkeletonCardState();
+}
+
+class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF162436) : const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(14),
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: Color.lerp(
+            widget.isDark ? const Color(0xFF162436) : const Color(0xFFE2E8F0),
+            widget.isDark ? const Color(0xFF1E3554) : const Color(0xFFF1F5F9),
+            _anim.value,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
     );
   }
