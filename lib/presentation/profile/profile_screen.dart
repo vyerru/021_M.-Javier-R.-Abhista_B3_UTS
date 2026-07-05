@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextButton(
               onPressed: _isSaving ? null : _handleSave,
               child: _isSaving
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentCyan))
                   : const Text('Simpan', style: TextStyle(fontWeight: FontWeight.w700)),
             )
           else
@@ -171,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundImage: user?.avatarUrl.isNotEmpty == true ? NetworkImage(user!.avatarUrl) : null,
           child: user?.avatarUrl.isNotEmpty != true
               ? Text(
-                  (user?.fullName ?? '?').substring(0, 1).toUpperCase(),
+                  (user != null && user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?'),
                   style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w700, color: AppTheme.accentCyan),
                 )
               : null,
@@ -181,12 +181,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           user?.fullName ?? 'Pengguna',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy, letterSpacing: -0.5),
         ),
-        const SizedBox(height: 4),
-        Text(
-          '@${user?.username ?? ''}',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-        ),
-        const SizedBox(height: 10),
+        if ((user?.username ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              '@${user!.username}',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
@@ -394,6 +396,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: widget.isDarkMode,
                   onChanged: (_) => widget.onThemeToggle(),
                   activeThumbColor: AppTheme.accentCyan,
+                  activeTrackColor: AppTheme.accentCyan.withValues(alpha: 0.3),
+                  inactiveThumbColor: AppTheme.accentCyan.withValues(alpha: 0.4),
+                  inactiveTrackColor: AppTheme.accentCyan.withValues(alpha: 0.1),
                 ),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),

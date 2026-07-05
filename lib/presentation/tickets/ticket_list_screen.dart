@@ -16,6 +16,7 @@ class TicketListScreen extends StatefulWidget {
 
 class _TicketListScreenState extends State<TicketListScreen> {
   TicketStatus? _selectedStatus;
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -23,6 +24,20 @@ class _TicketListScreenState extends State<TicketListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TicketProvider>().loadTickets();
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<TicketProvider>().loadMore();
+    }
   }
 
   void _refresh() {
@@ -146,10 +161,18 @@ class _TicketListScreenState extends State<TicketListScreen> {
   }
 
   Widget _buildList(List<Ticket> tickets, bool isDark) {
+    final provider = context.watch<TicketProvider>();
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
-      itemCount: tickets.length,
+      itemCount: tickets.length + (provider.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= tickets.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))),
+          );
+        }
         final ticket = tickets[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -172,20 +195,23 @@ class _TicketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = AppTheme.statusForegroundColor(ticket.status.label);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight, width: 1),
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight, width: 1),
+          ),
         child: Row(children: [
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(color: AppTheme.accentCyan.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-            child: Text(ticket.createdBy.fullName.substring(0, 1).toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.accentCyan)),
+            child: Text(ticket.createdBy.fullName.isNotEmpty ? ticket.createdBy.fullName[0].toUpperCase() : '?', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.accentCyan)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -207,7 +233,7 @@ class _TicketCard extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Icon(Icons.chevron_right_rounded, color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), size: 20),
-        ]),
+        ])),
       ),
     );
   }

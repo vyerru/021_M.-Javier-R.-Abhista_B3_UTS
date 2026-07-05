@@ -225,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           backgroundColor: AppTheme.accentCyan.withValues(alpha: 0.15),
           backgroundImage: user?.avatarUrl.isNotEmpty == true ? NetworkImage(user!.avatarUrl) : null,
           child: user?.avatarUrl.isNotEmpty != true
-              ? Text(user?.fullName.substring(0, 1).toUpperCase() ?? '?', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.accentCyan))
+               ? Text(user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : '?', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.accentCyan))
               : null,
         ),
       ],

@@ -26,6 +26,9 @@ class TicketProvider extends ChangeNotifier {
   List<User> _helpdeskUsers = [];
   TicketStatus? _selectedStatus;
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  int _page = 0;
+  bool _hasMore = true;
   String? _error;
 
   TicketProvider({
@@ -57,21 +60,53 @@ class TicketProvider extends ChangeNotifier {
   List<User> get helpdeskUsers => _helpdeskUsers;
   TicketStatus? get selectedStatus => _selectedStatus;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
   String? get error => _error;
 
   Future<void> loadTickets({TicketStatus? statusFilter}) async {
     _isLoading = true;
+    _page = 0;
+    _hasMore = true;
     _error = null;
     notifyListeners();
 
     try {
       _selectedStatus = statusFilter;
-      _tickets = await _getTicketsUseCase.call(statusFilter: statusFilter);
+      final result = await _getTicketsUseCase.call(statusFilter: statusFilter, page: 0);
+      _tickets = result;
+      _hasMore = result.length >= 20;
+      _page = 1;
     } catch (e) {
       _error = e.toString();
     }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final result = await _getTicketsUseCase.call(
+        statusFilter: _selectedStatus,
+        page: _page,
+      );
+      if (result.isEmpty) {
+        _hasMore = false;
+      } else {
+        _tickets.addAll(result);
+        _hasMore = result.length >= 20;
+        _page++;
+      }
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoadingMore = false;
     notifyListeners();
   }
 

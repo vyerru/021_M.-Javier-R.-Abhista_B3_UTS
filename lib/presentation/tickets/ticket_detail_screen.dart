@@ -581,14 +581,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               label: 'Kategori',
               value: ticket.category,
             ),
-            const Divider(height: 20),
+            const Divider(height: 1),
             _InfoRow(
               icon: Icons.person_outline_rounded,
               label: 'Dibuat oleh',
               value: ticket.createdBy.fullName,
               avatar: ticket.createdBy.avatarUrl,
             ),
-            const Divider(height: 20),
+            const Divider(height: 1),
             _InfoRow(
               icon: Icons.support_agent_rounded,
               label: 'Di-assign ke',
@@ -598,13 +598,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                   : null,
             ),
-            const Divider(height: 20),
+            const Divider(height: 1),
             _InfoRow(
               icon: Icons.schedule_rounded,
               label: 'Dibuat',
               value: _formatDateTime(ticket.createdAt),
             ),
-            const Divider(height: 20),
+            const Divider(height: 1),
             _InfoRow(
               icon: Icons.update_rounded,
               label: 'Diperbarui',
@@ -1169,7 +1169,7 @@ class _InfoRow extends StatelessWidget {
             color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
         const SizedBox(width: 10),
         SizedBox(
-          width: 90,
+          width: 100,
           child: Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(

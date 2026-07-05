@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/ticket.dart';
@@ -18,18 +19,14 @@ class TicketRepositoryImpl implements TicketRepository {
   );
 
   @override
-  Future<List<Ticket>> getTickets({TicketStatus? statusFilter}) async {
+  Future<List<Ticket>> getTickets({TicketStatus? statusFilter, int page = 0, int pageSize = 20}) async {
     final dtoList = await _ticketDataSource.getTickets(
       statusFilter: statusFilter?.name,
+      page: page,
+      pageSize: pageSize,
     );
 
-    final tickets = <Ticket>[];
-    for (final dto in dtoList) {
-      final comments = await _fetchComments(dto.id);
-      final history = await _fetchHistory(dto.id);
-      tickets.add(dto.toEntity(comments: comments, history: history));
-    }
-    return tickets;
+    return dtoList.map((dto) => dto.toEntity()).toList();
   }
 
   @override
@@ -114,7 +111,8 @@ class TicketRepositoryImpl implements TicketRepository {
     try {
       final dtoList = await _commentDataSource.getComments(ticketId);
       return dtoList.map((dto) => dto.toEntity()).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('_fetchComments error for $ticketId: $e');
       return [];
     }
   }
@@ -123,7 +121,8 @@ class TicketRepositoryImpl implements TicketRepository {
     try {
       final dtoList = await _ticketDataSource.getHistory(ticketId);
       return dtoList.map((dto) => dto.toEntity()).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('_fetchHistory error for $ticketId: $e');
       return [];
     }
   }

@@ -7,7 +7,7 @@ class GetTicketsUseCase {
 
   GetTicketsUseCase(this._repository);
 
-  Future<List<Ticket>> call({TicketStatus? statusFilter}) {
-    return _repository.getTickets(statusFilter: statusFilter);
+  Future<List<Ticket>> call({TicketStatus? statusFilter, int page = 0, int pageSize = 20}) {
+    return _repository.getTickets(statusFilter: statusFilter, page: page, pageSize: pageSize);
   }
 }

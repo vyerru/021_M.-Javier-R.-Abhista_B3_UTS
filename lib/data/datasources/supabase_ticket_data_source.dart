@@ -7,7 +7,7 @@ class SupabaseTicketDataSource {
 
   SupabaseTicketDataSource(this.client);
 
-  Future<List<TicketDto>> getTickets({String? statusFilter}) async {
+  Future<List<TicketDto>> getTickets({String? statusFilter, int page = 0, int pageSize = 20}) async {
     var query = client.from('tickets').select(
       '*, created_by:users!created_by(*), assigned_to:users!assigned_to(*)',
     );
@@ -16,7 +16,11 @@ class SupabaseTicketDataSource {
       query = query.eq('status', statusFilter);
     }
 
-    final data = await query.order('created_at', ascending: false);
+    final from = page * pageSize;
+    final to = from + pageSize - 1;
+    final data = await query
+        .order('created_at', ascending: false)
+        .range(from, to);
     return (data as List)
         .map((e) => TicketDto.fromJson(e as Map<String, dynamic>))
         .toList();

@@ -3,7 +3,7 @@ import '../entities/user.dart';
 import '../entities/enums.dart';
 
 abstract class TicketRepository {
-  Future<List<Ticket>> getTickets({TicketStatus? statusFilter});
+  Future<List<Ticket>> getTickets({TicketStatus? statusFilter, int page = 0, int pageSize = 20});
   Future<Ticket> getTicketById(String id);
   Future<Ticket> createTicket(Ticket ticket);
   Future<Ticket> updateTicketStatus(String ticketId, TicketStatus newStatus);
