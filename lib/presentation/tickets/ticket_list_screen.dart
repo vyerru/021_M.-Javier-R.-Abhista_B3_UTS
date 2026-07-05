@@ -195,6 +195,10 @@ class _TicketCard extends StatelessWidget {
                 _Tag(label: ticket.status.label, color: statusColor),
                 const SizedBox(width: 6),
                 _Tag(label: ticket.priority.label, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                if (ticket.attachmentUrls.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.attach_file_rounded, size: 14, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                ],
                 const Spacer(),
                 Text(_formatDate(ticket.createdAt), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
               ]),
