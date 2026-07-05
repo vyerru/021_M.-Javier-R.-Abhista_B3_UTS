@@ -347,16 +347,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   Color _priorityColor(TicketPriority p) {
-    switch (p) {
-      case TicketPriority.low:
-        return const Color(0xFF10B981);
-      case TicketPriority.medium:
-        return const Color(0xFFF59E0B);
-      case TicketPriority.high:
-        return const Color(0xFFEF4444);
-      case TicketPriority.critical:
-        return const Color(0xFF7C3AED);
-    }
+    return AppTheme.priorityColor(p.label);
   }
 
   bool _canChangeStatus(Ticket ticket, bool isAdmin, bool isHelpdesk) {
@@ -537,11 +528,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '#${ticket.id}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    '#${ticket.id}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -549,6 +544,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             const SizedBox(height: 14),
             Text(
               ticket.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 height: 1.3,
@@ -557,6 +554,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             const SizedBox(height: 10),
             Text(
               ticket.description,
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
                 height: 1.6,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
@@ -581,14 +580,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               label: 'Kategori',
               value: ticket.category,
             ),
-            const Divider(height: 1),
+            const SizedBox(height: 12),
             _InfoRow(
               icon: Icons.person_outline_rounded,
               label: 'Dibuat oleh',
               value: ticket.createdBy.fullName,
               avatar: ticket.createdBy.avatarUrl,
             ),
-            const Divider(height: 1),
+            const SizedBox(height: 12),
             _InfoRow(
               icon: Icons.support_agent_rounded,
               label: 'Di-assign ke',
@@ -598,13 +597,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                   : null,
             ),
-            const Divider(height: 1),
+            const SizedBox(height: 12),
             _InfoRow(
               icon: Icons.schedule_rounded,
               label: 'Dibuat',
               value: _formatDateTime(ticket.createdAt),
             ),
-            const Divider(height: 1),
+            const SizedBox(height: 12),
             _InfoRow(
               icon: Icons.update_rounded,
               label: 'Diperbarui',
@@ -999,6 +998,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       const SizedBox(height: 10),
                       Text(
                         comment.message,
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           height: 1.5,
                         ),
@@ -1162,7 +1163,7 @@ class _InfoRow extends StatelessWidget {
     final effectiveValueColor = valueColor ?? theme.colorScheme.onSurface;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon,
             size: 18,
@@ -1178,24 +1179,12 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Row(
-            spacing: 8,
-            children: [
-              if (avatar != null)
-                CircleAvatar(
-                  radius: 10,
-                  backgroundImage: NetworkImage(avatar!),
-                ),
-              Expanded(
-                child: Text(
-                  value,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: effectiveValueColor,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: effectiveValueColor,
+            ),
           ),
         ),
       ],

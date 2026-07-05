@@ -62,7 +62,6 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
       ),
       body: Column(
         children: [
-          // Filter chips
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -96,8 +95,6 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
             ),
           ),
           const SizedBox(height: 4),
-
-          // List
           Expanded(
             child: isLoading && tickets.isEmpty
                 ? const Center(child: CircularProgressIndicator())
@@ -180,6 +177,19 @@ class _RiwayatCard extends StatelessWidget {
 
   const _RiwayatCard({required this.ticket, required this.onTap});
 
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    final relative = diff.inMinutes < 60
+        ? '${diff.inMinutes}m lalu'
+        : diff.inHours < 24
+            ? '${diff.inHours}j lalu'
+            : '${diff.inDays}h lalu';
+    final absolute =
+        '${dt.day} ${['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][dt.month]} ${dt.year}';
+    return '$relative · $absolute';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -225,7 +235,6 @@ class _RiwayatCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              // Mini progress dots
               Row(
                 spacing: 3,
                 children: List.generate(steps.length, (i) {
@@ -269,10 +278,18 @@ class _RiwayatCard extends StatelessWidget {
                         fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
                     ),
                   ),
-                  Text(
-                    _formatDate(ticket.createdAt),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 10, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 3,
+                    children: [
+                      Icon(Icons.access_time_rounded, size: 10,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                      Text(
+                        _formatDate(ticket.createdAt),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 10, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
                   ),
                   Icon(Icons.chevron_right_rounded,
                       size: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
@@ -283,10 +300,5 @@ class _RiwayatCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return '${dt.day} ${months[dt.month]} ${dt.year}';
   }
 }

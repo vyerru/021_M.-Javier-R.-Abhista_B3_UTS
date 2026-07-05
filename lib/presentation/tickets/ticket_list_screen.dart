@@ -56,8 +56,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
     return Scaffold(
       body: Column(
         children: [
-          if (_selectedNavBarVisible)
-            Container(
+          Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,8 +104,6 @@ class _TicketListScreenState extends State<TicketListScreen> {
           : null,
     );
   }
-
-  bool get _selectedNavBarVisible => true;
 
   Widget _buildStatusFilter(bool isDark) {
     final statuses = <TicketStatus?>[null, TicketStatus.open, TicketStatus.assign, TicketStatus.inprogress, TicketStatus.closed];
@@ -221,13 +218,15 @@ class _TicketCard extends StatelessWidget {
               Row(children: [
                 _Tag(label: ticket.status.label, color: statusColor),
                 const SizedBox(width: 6),
-                _Tag(label: ticket.priority.label, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                _Tag(label: ticket.priority.label, color: AppTheme.priorityColor(ticket.priority.label)),
                 if (ticket.attachmentUrls.isNotEmpty) ...[
                   const SizedBox(width: 4),
                   Icon(Icons.attach_file_rounded, size: 14, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
                 ],
                 const Spacer(),
-                Text(_formatDate(ticket.createdAt), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                Icon(Icons.access_time_rounded, size: 11, color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight),
+                const SizedBox(width: 3),
+                Text(_formatDate(ticket.createdAt), style: TextStyle(fontSize: 11, color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight)),
               ]),
             ]),
           ),
@@ -241,9 +240,14 @@ class _TicketCard extends StatelessWidget {
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m lalu';
-    if (diff.inHours < 24) return '${diff.inHours}j lalu';
-    return '${diff.inDays}h lalu';
+    final relative = diff.inMinutes < 60
+        ? '${diff.inMinutes}m lalu'
+        : diff.inHours < 24
+            ? '${diff.inHours}j lalu'
+            : '${diff.inDays}h lalu';
+    final absolute =
+        '${dt.day} ${['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][dt.month]} ${dt.year}';
+    return '$relative · $absolute';
   }
 }
 

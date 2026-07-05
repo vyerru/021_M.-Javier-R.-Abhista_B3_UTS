@@ -156,7 +156,7 @@ class _NotificationCard extends StatelessWidget {
               Text(notification.message, style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 6),
               Row(children: [
-                Text(_timeAgo(notification.createdAt), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                Text(_timeAgo(notification.createdAt), style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8))),
                 if (notification.ticketTitle != null) ...[
                   const SizedBox(width: 8),
                   Container(width: 3, height: 3, decoration: BoxDecoration(color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), shape: BoxShape.circle)),

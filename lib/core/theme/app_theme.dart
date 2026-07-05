@@ -24,6 +24,12 @@ abstract final class AppTheme {
   static const Color statusInProgress = Color(0xFFF59E0B); // Amber
   static const Color statusClosed = Color(0xFF6B7280);     // Abu
 
+  // Priority tiket
+  static const Color priorityLow = Color(0xFF10B981);      // Hijau
+  static const Color priorityMedium = Color(0xFFF59E0B);   // Amber
+  static const Color priorityHigh = Color(0xFFEF4444);     // Merah
+  static const Color priorityCritical = Color(0xFF7C3AED); // Ungu
+
   // Neutral
   static const Color surfaceLight = Color(0xFFF8FAFC);
   static const Color surfaceDark = Color(0xFF0F1D2E);
@@ -374,6 +380,21 @@ abstract final class AppTheme {
         return statusInProgress;
       case 'closed':
         return statusClosed;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static Color priorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'low':
+        return priorityLow;
+      case 'medium':
+        return priorityMedium;
+      case 'high':
+        return priorityHigh;
+      case 'critical':
+        return priorityCritical;
       default:
         return Colors.grey;
     }
