@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 import '../providers/auth_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../auth/login_screen.dart';
+import '../auth/new_password_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _fadeIn;
   late final Animation<Offset> _slideUp;
+  bool _isRecoverySession = false;
 
   @override
   void initState() {
@@ -47,6 +50,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animController.forward();
 
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        _isRecoverySession = true;
+      }
+    });
+
     Future.delayed(const Duration(milliseconds: 2800), () async {
       if (!mounted) return;
 
@@ -57,18 +66,24 @@ class _SplashScreenState extends State<SplashScreen>
 
       final themeProvider = ThemeToggleProvider.of(context);
       if (auth.isLoggedIn) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, animation, __) => DashboardScreen(
-              onThemeToggle: themeProvider?.toggleTheme ?? () {},
-              isDarkMode: themeProvider?.isDarkMode ?? false,
+        if (_isRecoverySession) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const NewPasswordScreen()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (_, animation, __) => DashboardScreen(
+                onThemeToggle: themeProvider?.toggleTheme ?? () {},
+                isDarkMode: themeProvider?.isDarkMode ?? false,
+              ),
+              transitionsBuilder: (_, animation, __, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 400),
             ),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 400),
-          ),
-        );
+          );
+        }
       } else {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
