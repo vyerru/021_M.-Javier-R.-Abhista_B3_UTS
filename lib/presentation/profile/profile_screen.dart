@@ -179,14 +179,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         Text(
           user?.fullName ?? 'Pengguna',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy, letterSpacing: -0.5),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy, letterSpacing: -0.5),
         ),
         if ((user?.username ?? '').isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
               '@${user!.username}',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             ),
           ),
         Container(
@@ -248,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Nama Lengkap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+              Text('Nama Lengkap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameController,
@@ -257,7 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 validator: (v) => v == null || v.trim().isEmpty ? 'Nama tidak boleh kosong' : null,
               ),
               const SizedBox(height: 20),
-              Text('Username', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+              Text('Username', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _usernameController,
@@ -280,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.only(bottom: 12, left: 2),
           child: Text(
             'Statistik Akun',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy),
           ),
         ),
         Card(
@@ -357,10 +357,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 value.toString(),
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy, height: 1),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy, height: 1),
               ),
               const SizedBox(height: 2),
-              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
+              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textMuted)),
             ],
           ),
         ],
@@ -376,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.only(bottom: 12, left: 2),
           child: Text(
             'Pengaturan',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy),
           ),
         ),
         Card(

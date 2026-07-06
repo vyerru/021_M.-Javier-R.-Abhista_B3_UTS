@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen>
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w800,
-            color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy,
+            color: isDark ? AppTheme.darkText : AppTheme.primaryNavy,
             height: 1.2,
             letterSpacing: -0.8,
           ),
@@ -211,8 +211,8 @@ class _LoginScreenState extends State<LoginScreen>
           style: TextStyle(
             fontSize: 14,
             color: isDark
-                ? const Color(0xFF64748B)
-                : const Color(0xFF64748B),
+                ? AppTheme.textSecondary
+                : AppTheme.textSecondary,
             height: 1.4,
           ),
         ),
@@ -252,8 +252,8 @@ class _LoginScreenState extends State<LoginScreen>
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF475569),
+                    ? AppTheme.textMuted
+                    : AppTheme.iconDarkMuted,
                 letterSpacing: 0.2,
               ),
             ),
@@ -292,8 +292,8 @@ class _LoginScreenState extends State<LoginScreen>
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF475569),
+                    ? AppTheme.textMuted
+                    : AppTheme.iconDarkMuted,
                 letterSpacing: 0.2,
               ),
             ),
@@ -409,8 +409,8 @@ class _LoginScreenState extends State<LoginScreen>
             style: TextStyle(
               fontSize: 13,
               color: isDark
-                  ? const Color(0xFF64748B)
-                  : const Color(0xFF64748B),
+                  ? AppTheme.textSecondary
+                  : AppTheme.textSecondary,
             ),
           ),
           GestureDetector(
@@ -441,8 +441,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildDemoHint(ThemeData theme, bool isDark) {
     final hintColor = isDark
-        ? const Color(0xFF475569)
-        : const Color(0xFF94A3B8);
+        ? AppTheme.iconDarkMuted
+        : AppTheme.textMuted;
     final accounts = [
       ('admin@e-ticketing.demo', 'admin123', 'Admin'),
       ('helpdesk@e-ticketing.demo', 'helpdesk123', 'Helpdesk'),

@@ -80,9 +80,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Future<void> _showUpdateStatusSheet(Ticket ticket) async {
     final currentUser = context.read<AuthProvider>().currentUser;
-    final isAdmin = currentUser?.role == UserRole.admin;
     final isHelpdesk = currentUser?.role == UserRole.helpdesk;
-    final available = _availableStatuses(ticket, isAdmin, isHelpdesk);
+    final available = ticket.availableStatusesFor(currentUser?.role ?? UserRole.user);
 
     if (available.isEmpty) return;
 
@@ -376,22 +375,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  bool _canChangeStatus(Ticket ticket, bool isAdmin, bool isHelpdesk) {
-    if (isAdmin && ticket.status == TicketStatus.open) return true;
-    if (isHelpdesk && ticket.status == TicketStatus.inprogress) return true;
-    return false;
-  }
-
-  bool _canAssign(Ticket ticket) {
-    return ticket.status == TicketStatus.assign;
-  }
-
-  List<TicketStatus> _availableStatuses(Ticket ticket, bool isAdmin, bool isHelpdesk) {
-    if (isAdmin && ticket.status == TicketStatus.open) return [TicketStatus.assign];
-    if (isHelpdesk && ticket.status == TicketStatus.inprogress) return [TicketStatus.closed];
-    return [];
-  }
-
   // ─────────────────────────────────────────────────────────────────────────────
   //  BUILD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -420,7 +403,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 if (val == 'assign') _showAssignSheet(ticket);
               },
               itemBuilder: (_) => [
-                if (_canChangeStatus(ticket, isAdmin, isHelpdesk))
+                if (ticket.canChangeStatusBy(currentUser?.role ?? UserRole.user))
                   const PopupMenuItem(
                     value: 'status',
                     child: Row(
@@ -431,7 +414,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       ],
                     ),
                   ),
-                if (isAdmin && _canAssign(ticket))
+                if (ticket.canBeAssignedBy(currentUser?.role ?? UserRole.user))
                   const PopupMenuItem(
                     value: 'assign',
                     child: Row(
@@ -508,12 +491,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                 ),
                                 const SizedBox(height: 12),
                               ],
-                              if (isAdmin) ...[
+                              if (isStaff) ...[
                                 StaffActionsCard(
-                                  showStatusButton: _canChangeStatus(ticket, isAdmin, isHelpdesk),
+                                  showStatusButton: ticket.canChangeStatusBy(currentUser?.role ?? UserRole.user),
                                   statusButtonLabel: isHelpdesk ? 'Selesaikan Tiket' : 'Ubah Status',
                                   onStatusTap: () => _showUpdateStatusSheet(ticket),
-                                  showAssignButton: isAdmin && _canAssign(ticket),
+                                  showAssignButton: ticket.canBeAssignedBy(currentUser?.role ?? UserRole.user),
                                   onAssignTap: () => _showAssignSheet(ticket),
                                   isSubmitting: _isSubmitting,
                                 ),

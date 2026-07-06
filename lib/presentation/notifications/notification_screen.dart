@@ -63,7 +63,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (notifProvider.error != null && notifications.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.error_outline, size: 40, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+          Icon(Icons.error_outline, size: 40, color: isDark ? AppTheme.iconDarkMuted : AppTheme.textMuted),
           const SizedBox(height: 12),
           const Text('Gagal memuat notifikasi'),
           const SizedBox(height: 12),
@@ -75,9 +75,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (notifications.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.notifications_off_rounded, size: 48, color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+          Icon(Icons.notifications_off_rounded, size: 48, color: isDark ? const Color(0xFF334155) : AppTheme.iconSubtle),
           const SizedBox(height: 12),
-          Text('Tidak ada notifikasi', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8))),
+          Text('Tidak ada notifikasi', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? AppTheme.iconDarkMuted : AppTheme.textMuted)),
         ]),
       );
     }
@@ -88,7 +88,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
           child: Row(
             children: [
-              Text('${notifications.length} Notifikasi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
+              Text('${notifications.length} Notifikasi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textSecondary : AppTheme.textMuted)),
               const Spacer(),
               TextButton.icon(
                 onPressed: _handleMarkAllRead,
@@ -150,16 +150,16 @@ class _NotificationCard extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 if (!isRead) Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6, top: 2), decoration: const BoxDecoration(color: AppTheme.accentCyan, shape: BoxShape.circle)),
-                Expanded(child: Text(notification.title, style: TextStyle(fontSize: 13, fontWeight: isRead ? FontWeight.w600 : FontWeight.w700, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy))),
+                Expanded(child: Text(notification.title, style: TextStyle(fontSize: 13, fontWeight: isRead ? FontWeight.w600 : FontWeight.w700, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy))),
               ]),
               const SizedBox(height: 4),
-              Text(notification.message, style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
+              Text(notification.message, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 6),
               Row(children: [
-                Text(_timeAgo(notification.createdAt), style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8))),
+                Text(_timeAgo(notification.createdAt), style: TextStyle(fontSize: 11, color: isDark ? AppTheme.iconDarkMuted : AppTheme.textMuted)),
                 if (notification.ticketTitle != null) ...[
                   const SizedBox(width: 8),
-                  Container(width: 3, height: 3, decoration: BoxDecoration(color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), shape: BoxShape.circle)),
+                  Container(width: 3, height: 3, decoration: BoxDecoration(color: isDark ? AppTheme.iconDarkMuted : AppTheme.iconSubtle, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
                   Expanded(child: Text(notification.ticketTitle!, style: const TextStyle(fontSize: 11, color: AppTheme.accentCyan, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ],

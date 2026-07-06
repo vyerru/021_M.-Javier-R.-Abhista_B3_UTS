@@ -61,7 +61,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Daftar Tiket', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy, letterSpacing: -0.5)),
+                  Text('Daftar Tiket', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? AppTheme.darkText : AppTheme.primaryNavy, letterSpacing: -0.5)),
                   const SizedBox(height: 12),
                   _buildStatusFilter(isDark),
                 ],
@@ -117,7 +117,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(labels[i], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : (isDark ? const Color(0xFFCBD5E1) : AppTheme.primaryNavy))),
+              label: Text(labels[i], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : (isDark ? AppTheme.iconSubtle : AppTheme.primaryNavy))),
               selected: selected,
               onSelected: (_) {
                 setState(() => _selectedStatus = statuses[i]);
@@ -148,11 +148,11 @@ class _TicketListScreenState extends State<TicketListScreen> {
   Widget _buildEmpty(bool isDark) {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.inbox_rounded, size: 64, color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+        Icon(Icons.inbox_rounded, size: 64, color: isDark ? const Color(0xFF334155) : AppTheme.iconSubtle),
         const SizedBox(height: 16),
-        Text('Belum ada tiket', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
+        Text('Belum ada tiket', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textSecondary : AppTheme.textMuted)),
         const SizedBox(height: 8),
-        Text('Buat tiket baru untuk memulai', style: TextStyle(fontSize: 13, color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))),
+        Text('Buat tiket baru untuk memulai', style: TextStyle(fontSize: 13, color: isDark ? AppTheme.iconDarkMuted : AppTheme.iconSubtle)),
       ]),
     );
   }
@@ -213,7 +213,7 @@ class _TicketCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(ticket.title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFCBD5E1) : AppTheme.primaryNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(ticket.title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? AppTheme.iconSubtle : AppTheme.primaryNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 6),
               Row(children: [
                 _Tag(label: ticket.status.label, color: statusColor),
@@ -221,7 +221,7 @@ class _TicketCard extends StatelessWidget {
                 _Tag(label: ticket.priority.label, color: AppTheme.priorityColor(ticket.priority.label)),
                 if (ticket.attachmentUrls.isNotEmpty) ...[
                   const SizedBox(width: 4),
-                  Icon(Icons.attach_file_rounded, size: 14, color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                  Icon(Icons.attach_file_rounded, size: 14, color: isDark ? AppTheme.iconDarkMuted : AppTheme.textMuted),
                 ],
                 const Spacer(),
                 Icon(Icons.access_time_rounded, size: 11, color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight),
@@ -231,7 +231,7 @@ class _TicketCard extends StatelessWidget {
             ]),
           ),
           const SizedBox(width: 4),
-          Icon(Icons.chevron_right_rounded, color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), size: 20),
+          Icon(Icons.chevron_right_rounded, color: isDark ? AppTheme.iconDarkMuted : AppTheme.iconSubtle, size: 20),
         ])),
       ),
     );
@@ -299,7 +299,7 @@ class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderS
         height: 72,
         decoration: BoxDecoration(
           color: Color.lerp(
-            widget.isDark ? const Color(0xFF162436) : const Color(0xFFE2E8F0),
+            widget.isDark ? const Color(0xFF162436) : AppTheme.darkText,
             widget.isDark ? const Color(0xFF1E3554) : const Color(0xFFF1F5F9),
             _anim.value,
           ),

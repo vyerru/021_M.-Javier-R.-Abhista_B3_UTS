@@ -34,9 +34,16 @@ abstract final class AppTheme {
   static const Color surfaceLight = Color(0xFFF8FAFC);
   static const Color surfaceDark = Color(0xFF0F1D2E);
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color cardDark = Color(0xFF162436);
+  static const Color cardDark = Color(0xFF0D2137);
   static const Color dividerLight = Color(0xFFE2E8F0);
   static const Color dividerDark = Color(0xFF1E3554);
+
+  // Text & Icon netral (sering dipakai)
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color iconSubtle = Color(0xFFCBD5E1);
+  static const Color iconDarkMuted = Color(0xFF475569);
+  static const Color darkText = Color(0xFFE2E8F0);
 
   // ─── Light Theme ──────────────────────────────────────────────────────────
 

@@ -190,7 +190,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         child: Form(
           key: _formKey,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Judul', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            Text('Judul', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
@@ -199,7 +199,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
             ),
             const SizedBox(height: 20),
-            Text('Kategori', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            Text('Kategori', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedCategory,
@@ -208,7 +208,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               decoration: const InputDecoration(prefixIcon: Icon(Icons.category_outlined, size: 20)),
             ),
             const SizedBox(height: 20),
-            Text('Prioritas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            Text('Prioritas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
             const SizedBox(height: 8),
             SegmentedButton<TicketPriority>(
               segments: TicketPriority.values.map((p) => ButtonSegment(value: p, label: Text(p.label, style: const TextStyle(fontSize: 12)))).toList(),
@@ -221,7 +221,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Deskripsi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+            Text('Deskripsi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
             const SizedBox(height: 8),
             TextFormField(
               controller: _descController,
@@ -238,7 +238,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 Icon(Icons.attach_file_rounded, size: 18, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                 Text('Lampiran (${_selectedFiles.length})',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                        color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: _isLoading ? null : _showFileSourceSheet,

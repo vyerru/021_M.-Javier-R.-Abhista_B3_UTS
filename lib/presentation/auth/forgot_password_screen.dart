@@ -153,7 +153,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
                           color: isDark
-                              ? const Color(0xFFE2E8F0)
+                              ? AppTheme.darkText
                               : AppTheme.primaryNavy,
                           height: 1.2,
                           letterSpacing: -0.8,
@@ -165,8 +165,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         style: TextStyle(
                           fontSize: 14,
                           color: isDark
-                              ? const Color(0xFF64748B)
-                              : const Color(0xFF64748B),
+                              ? AppTheme.textSecondary
+                              : AppTheme.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -195,8 +195,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF475569),
+                                      ? AppTheme.textMuted
+                                      : AppTheme.iconDarkMuted,
                                 ),
                               ),
                               const SizedBox(height: 8),

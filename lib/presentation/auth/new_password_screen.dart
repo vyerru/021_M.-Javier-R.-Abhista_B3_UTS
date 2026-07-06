@@ -150,7 +150,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     'Buat Password\nBaru',
                     style: TextStyle(
                       fontSize: 32, fontWeight: FontWeight.w800,
-                      color: isDark ? const Color(0xFFE2E8F0) : AppTheme.primaryNavy,
+                      color: isDark ? AppTheme.darkText : AppTheme.primaryNavy,
                       height: 1.2, letterSpacing: -0.8,
                     ),
                   ),
@@ -159,7 +159,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     'Email: ${widget.email}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B),
+                      color: AppTheme.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -181,7 +181,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                         children: [
                           Text('Password Baru',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                                  color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _passwordController,
@@ -205,7 +205,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           const SizedBox(height: 20),
                           Text('Konfirmasi Password Baru',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                                  color: isDark ? AppTheme.textMuted : AppTheme.iconDarkMuted)),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _confirmController,
