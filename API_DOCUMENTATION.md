@@ -1,7 +1,7 @@
 # E-Ticketing Helpdesk — API Documentation
 
-**Version**: 1.0.0  
-**Last Updated**: June 2026  
+**Version**: 1.2.0  
+**Last Updated**: July 2026  
 **Project**: E-Ticketing Helpdesk System  
 **Tech Stack**: Flutter 3.x · Supabase (Postgres, Auth, REST API)
 
@@ -28,8 +28,8 @@ The E-Ticketing Helpdesk is a ticketing management system with three roles:
 | Role | Capabilities |
 |------|-------------|
 | **User** | Create tickets, track status, comment, receive notifications |
-| **Helpdesk** | View all tickets, update status, assign tickets, reply to comments |
-| **Admin** | Same as Helpdesk, plus user management (future) |
+| **Helpdesk** | View all tickets, change status (inprogress→closed), reply to comments |
+| **Admin** | View all tickets, assign tickets to helpdesk (assigns + sets inprogress), change status (open→assign), reply to comments |
 
 ### Architecture
 
@@ -241,7 +241,7 @@ The core entity representing a support ticket.
 | `id` | `uuid` | `PK` | `gen_random_uuid()` |
 | `title` | `text` | `NOT NULL` | |
 | `description` | `text` | `NOT NULL` | |
-| `status` | `text` | `NOT NULL`, CHECK (`open`, `inProgress`, `resolved`, `closed`) | `'open'` |
+| `status` | `text` | `NOT NULL`, CHECK (`open`, `assign`, `inprogress`, `closed`) | `'open'` |
 | `priority` | `text` | `NOT NULL`, CHECK (`low`, `medium`, `high`, `critical`) | `'medium'` |
 | `category` | `text` | `NOT NULL`, CHECK (`Hardware`, `Software`, `Network`, `Account`) | |
 | `created_by` | `uuid` | `NOT NULL`, FK → `users(id)` ON DELETE CASCADE | |
@@ -253,10 +253,18 @@ The core entity representing a support ticket.
 #### Status Lifecycle
 
 ```
-open ──→ inProgress ──→ resolved ──→ closed
-  ↑                        │
-  └────────────────────────┘
+open ──→ assign ──→ inprogress ──→ closed
+  ↑          │
+  │          ▼
+  │    (assign + set inprogress)
+  └──────── Admin ──────────┘
 ```
+
+| Transition | Performed By | Method |
+|------------|-------------|--------|
+| `open → assign` | Admin | `updateStatus` (status only) |
+| `assign → inprogress` | Admin | `assignTicket` (assigns helpdesk + sets status simultaneously) |
+| `inprogress → closed` | Helpdesk | `updateStatus` (status only) |
 
 ### 3.3 `comments`
 
@@ -281,9 +289,9 @@ Audit log of status changes and assignments.
 | `ticket_id` | `uuid` | `NOT NULL`, FK → `tickets(id)` ON DELETE CASCADE | |
 | `changed_by` | `uuid` | `NOT NULL`, FK → `users(id)` ON DELETE CASCADE | |
 | `action` | `text` | `NOT NULL` | |
-| `from_status` | `text` | CHECK (`open`, `inProgress`, `resolved`, `closed`) | |
-| `to_status` | `text` | CHECK (`open`, `inProgress`, `resolved`, `closed`) | |
-| `created_at` | `timestamptz` | `NOT NULL` | `now()` |
+| `from_status` | `text` | CHECK (`open`, `assign`, `inprogress`, `closed`) | |
+| `to_status` | `text` | CHECK (`open`, `assign`, `inprogress`, `closed`) | |
+| `timestamp` | `timestamptz` | | `now()` |
 
 ### 3.5 `notifications`
 
@@ -347,7 +355,7 @@ notifications_user_unread_idx ON notifications(user_id) WHERE (is_read = false)
 │  message   │     │  action       │
 │  created_at│     │  from_status  │
 └────────────┘     │  to_status    │
-                   │  created_at   │
+                   │  timestamp    │
 ┌────────────────┐ └───────────────┘
 │ notifications  │
 │                │
@@ -409,7 +417,7 @@ final data = await supabase
     "id": "f7924bf2-23a5-4b0d-a1bb-a4985aa26442",
     "title": "Testing Notifikasi Trigger",
     "description": "Test apakah notifikasi trigger berfungsi",
-    "status": "inProgress",
+    "status": "inprogress",
     "priority": "medium",
     "category": "Software",
     "created_by": {
@@ -543,7 +551,7 @@ Only users with role `helpdesk` or `admin` can update tickets (enforced by RLS).
 
 ```json
 {
-  "status": "inProgress"
+  "status": "inprogress"
 }
 ```
 
@@ -588,6 +596,33 @@ final data = await supabase
     .select('*, created_by:users!created_by(*), assigned_to:users!assigned_to(*)')
     .single();
 ```
+
+#### Update Attachment URLs
+
+Updates the `attachment_urls` array after file uploads.
+
+```
+PATCH /rest/v1/tickets?id=eq.{ticket_id}
+```
+
+**Request Body:**
+
+```json
+{
+  "attachment_urls": ["https://...file1.pdf", "https://...file2.png"]
+}
+```
+
+**Flutter Equivalent:**
+
+```dart
+await supabase
+    .from('tickets')
+    .update({'attachment_urls': urls})
+    .eq('id', ticketId);
+```
+
+**Note:** Requires the `tickets_update_own` RLS policy (ticket creator) or `tickets_update` policy (admin/helpdesk).
 
 ---
 
@@ -860,7 +895,7 @@ POST /rest/v1/ticket_history
   "ticket_id": "ticket-uuid",
   "changed_by": "user-uuid",
   "action": "Status changed to In Progress",
-  "to_status": "inProgress"
+  "to_status": "inprogress"
 }
 ```
 
@@ -924,8 +959,8 @@ final data = await supabase.rpc('get_statistics', params: {
   {
     "total": 12,
     "open": 4,
-    "inProgress": 3,
-    "resolved": 4,
+    "assign": 0,
+    "inprogress": 4,
     "closed": 1
   }
 ]
@@ -938,8 +973,8 @@ create or replace function get_statistics(user_id uuid default null)
 returns table (
   total bigint,
   open bigint,
-  "inProgress" bigint,
-  resolved bigint,
+  "assign" bigint,
+  inprogress bigint,
   closed bigint
 )
 language sql
@@ -949,8 +984,8 @@ as $$
   select
     count(*)::bigint as total,
     count(*) filter (where status = 'open')::bigint as open,
-    count(*) filter (where status = 'inProgress')::bigint as "inProgress",
-    count(*) filter (where status = 'resolved')::bigint as resolved,
+    count(*) filter (where status = 'assign')::bigint as "assign",
+    count(*) filter (where status = 'inprogress')::bigint as inprogress,
     count(*) filter (where status = 'closed')::bigint as closed
   from tickets
   where (created_by = user_id or user_id is null);
@@ -971,13 +1006,32 @@ All tables have RLS enabled. Policies are enforced on every query.
 | `users_insert_own` | INSERT | `authenticated` | Can only insert own profile (`auth.uid() = id`) |
 | `users_update_own` | UPDATE | `authenticated` | Can only update own profile (`auth.uid() = id`) |
 
+```sql
+-- SELECT: All authenticated users can read any profile
+create policy "users_select_all" on users for select
+  to authenticated
+  using (true);
+
+-- INSERT: Can only insert own profile
+create policy "users_insert_own" on users for insert
+  to authenticated
+  with check (auth.uid() = id);
+
+-- UPDATE: Can only update own profile
+create policy "users_update_own" on users for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+```
+
 ### 6.2 `tickets`
 
 | Policy | Operation | Target | Logic |
 |--------|-----------|--------|-------|
 | `tickets_select` | SELECT | `authenticated` | Own tickets OR any ticket if role is `helpdesk` or `admin` |
-| `tickets_insert` | INSERT | `authenticated` | Must be `created_by` AND role must be `user` |
-| `tickets_update` | UPDATE | `authenticated` | Only role `helpdesk` or `admin` |
+| `tickets_insert` | INSERT | `authenticated` | Must be `created_by` AND role must be `user`, `admin`, or `helpdesk` |
+| `tickets_update` | UPDATE | `authenticated` | Only role `helpdesk` or `admin`. `assigned_to` change blocked by `check_assign_permission` trigger |
+| `tickets_update_own` | UPDATE | `authenticated` | Ticket creator can update own ticket (`auth.uid() = created_by`) |
 
 **SQL Definitions:**
 
@@ -993,14 +1047,14 @@ create policy "tickets_select" on tickets for select
     )
   );
 
--- INSERT: Only regular users can create tickets
+-- INSERT: Any authenticated user can create tickets
 create policy "tickets_insert" on tickets for insert
   to authenticated
   with check (
     auth.uid() = created_by
     and exists (
       select 1 from users
-      where id = auth.uid() and role = 'user'
+      where id = auth.uid() and role in ('user', 'admin', 'helpdesk')
     )
   );
 
@@ -1019,7 +1073,15 @@ create policy "tickets_update" on tickets for update
       where id = auth.uid() and role in ('helpdesk', 'admin')
     )
   );
+
+-- UPDATE own: Ticket creator can update own ticket
+create policy "tickets_update_own" on tickets for update
+  to authenticated
+  using (auth.uid() = created_by)
+  with check (auth.uid() = created_by);
 ```
+
+**Note:** Changing `assigned_to` is further restricted by the `check_assign_permission` database trigger — only admin can assign tickets. Helpdesk will receive an exception if they attempt to change `assigned_to`.
 
 ### 6.3 `comments`
 
@@ -1042,7 +1104,61 @@ Access to comments is gated by the parent ticket: users must be the ticket's `cr
 | Policy | Operation | Target | Logic |
 |--------|-----------|--------|-------|
 | `notifications_select` | SELECT | `authenticated` | Only own notifications (`auth.uid() = user_id`) |
+| `notifications_insert` | INSERT | `authenticated` | Allow any authenticated user/trigger to insert (`with check true`) |
 | `notifications_update` | UPDATE | `authenticated` | Can only update own notifications (`auth.uid() = user_id`) |
+
+```sql
+-- INSERT: Allows database triggers to create notifications
+create policy "notifications_insert" on notifications for insert
+  to authenticated
+  with check (true);
+```
+
+### 6.6 `ticket_attachments` (Storage Bucket)
+
+Supabase Storage bucket for ticket attachment files. Public read access; write restricted to authenticated users.
+
+| Bucket | Public | File Size Limit | Allowed MIME Types |
+|--------|--------|-----------------|---------------------|
+| `ticket_attachments` | `true` | 10 MB | `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+
+**Storage RLS Policies (on `storage.objects`):**
+
+| Policy | Operation | Target | Logic |
+|--------|-----------|--------|-------|
+| `select_ticket_attachments` | SELECT | `authenticated` | Any authenticated user can read (bucket_id = `ticket_attachments`) |
+| `insert_ticket_attachments` | INSERT | `authenticated` | Uploader must be authenticated (bucket_id = `ticket_attachments` AND `owner = auth.uid()`) |
+| `delete_own_ticket_attachments` | DELETE | `authenticated` | Only file owner can delete (bucket_id = `ticket_attachments` AND `owner = auth.uid()`) |
+
+```sql
+-- Create bucket
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('ticket_attachments', 'ticket_attachments', true, 10485760,
+  array['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', ...]);
+
+-- RLS policies
+create policy "select_ticket_attachments" on storage.objects for select
+  to authenticated using ( bucket_id = 'ticket_attachments' );
+
+create policy "insert_ticket_attachments" on storage.objects for insert
+  to authenticated with check ( bucket_id = 'ticket_attachments' and owner = auth.uid() );
+
+create policy "delete_own_ticket_attachments" on storage.objects for delete
+  to authenticated using ( bucket_id = 'ticket_attachments' and owner = auth.uid() );
+```
+
+**Upload Flow (Flutter):**
+
+```dart
+final bytes = await file.readAsBytes();
+await supabase.storage
+    .from('ticket_attachments')
+    .uploadBinary('{ticket_id}/{timestamp}.{ext}', bytes);
+
+final url = supabase.storage
+    .from('ticket_attachments')
+    .getPublicUrl('{ticket_id}/{timestamp}.{ext}');
+```
 
 ---
 
@@ -1070,7 +1186,33 @@ create trigger set_updated_at
   execute function handle_updated_at();
 ```
 
-### 7.2 `notify_ticket_change()`
+### 7.2 `check_assign_permission()`
+
+Prevents helpdesk users from changing the `assigned_to` column. Only admin can reassign tickets.
+
+```sql
+create or replace function check_assign_permission()
+returns trigger
+language plpgsql
+security invoker
+as $$
+begin
+  if old.assigned_to is distinct from new.assigned_to then
+    if not exists (select 1 from users where id = auth.uid() and role = 'admin') then
+      raise exception 'Hanya admin yang dapat mengassign tiket';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_check_assign_permission
+  before update on tickets
+  for each row
+  execute function check_assign_permission();
+```
+
+### 7.3 `notify_ticket_change()`
 
 Creates notifications automatically when tickets are created or updated.
 
@@ -1082,41 +1224,62 @@ security invoker
 as $$
 begin
   if tg_op = 'INSERT' then
-    -- Notify all staff when a ticket is created
+    -- Notify admin only when a ticket is created
     insert into notifications (user_id, title, message, ticket_id, ticket_title, is_read, created_at)
     select
       u.id,
       'Tiket Baru',
-      'Tiket "' || new.title || '" telah dibuat.',
+      'Tiket "' || new.title || '" telah dibuat oleh '
+        || coalesce((select full_name from users where id = new.created_by), 'pengguna'),
       new.id,
       new.title,
       false,
       now()
     from users u
-    where u.role in ('helpdesk', 'admin');
+    where u.role = 'admin';
 
   elsif tg_op = 'UPDATE' then
-    -- Notify ticket creator when status changes
+    -- Notify ticket creator on status change (with assignee info)
     if old.status is distinct from new.status then
       insert into notifications (user_id, title, message, ticket_id, ticket_title, is_read, created_at)
       values (
         new.created_by,
         'Status Tiket Diubah',
-        'Status tiket "' || coalesce(new.title, '') || '" berubah menjadi ' || coalesce(new.status, ''),
+        'Status tiket "' || coalesce(new.title, '') || '" berubah menjadi ' || coalesce(new.status, '')
+        || case when new.assigned_to is not null
+             then ' - Ditugaskan ke ' || coalesce((select full_name from users where id = new.assigned_to), 'petugas')
+             else ''
+           end,
         new.id,
         new.title,
         false,
         now()
       );
+
+      -- Notify admin when ticket is closed
+      if new.status = 'closed' and old.status != 'closed' then
+        insert into notifications (user_id, title, message, ticket_id, ticket_title, is_read, created_at)
+        select
+          u.id,
+          'Tiket Selesai',
+          'Tiket "' || coalesce(new.title, '') || '" telah selesai dikerjakan oleh '
+            || coalesce((select full_name from users where id = new.assigned_to), 'petugas'),
+          new.id,
+          new.title,
+          false,
+          now()
+        from users u
+        where u.role = 'admin';
+      end if;
     end if;
 
-    -- Notify assigned user
+    -- Notify assigned helpdesk
     if old.assigned_to is distinct from new.assigned_to and new.assigned_to is not null then
       insert into notifications (user_id, title, message, ticket_id, ticket_title, is_read, created_at)
       values (
         new.assigned_to,
         'Tiket Diassign',
-        'Tiket "' || coalesce(new.title, '') || '" telah diassign kepada Anda',
+        'Tiket "' || coalesce(new.title, '') || '" telah diassign kepada Anda untuk dikerjakan',
         new.id,
         new.title,
         false,
@@ -1142,13 +1305,54 @@ create trigger trg_ticket_insert_notification
   execute function notify_ticket_change();
 ```
 
+### 7.4 `notify_new_comment()`
+
+Automatically notifies the ticket owner when a new comment is added by someone else.
+
+```sql
+create or replace function notify_new_comment()
+returns trigger
+language plpgsql
+security invoker
+as $$
+declare
+  t_owner uuid;
+  t_title text;
+begin
+  select created_by, title into t_owner, t_title from tickets where id = new.ticket_id;
+
+  if t_owner is not null and t_owner != new.author_id then
+    insert into notifications (user_id, title, message, ticket_id, ticket_title, is_read, created_at)
+    values (
+      t_owner,
+      'Komentar Baru',
+      'Tiket "' || coalesce(t_title, '') || '" mendapat komentar baru',
+      new.ticket_id,
+      t_title,
+      false,
+      now()
+    );
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger on_comment_insert
+  after insert on comments
+  for each row
+  execute function notify_new_comment();
+```
+
 #### Notification Types
 
 | Event | Title | Recipient | Example Message |
 |-------|-------|-----------|-----------------|
-| Ticket Created | `Tiket Baru` | All helpdesk + admin | `Tiket "Laptop Rusak" telah dibuat.` |
-| Status Changed | `Status Tiket Diubah` | Ticket creator | `Status tiket "Laptop Rusak" berubah menjadi inProgress` |
-| Ticket Assigned | `Tiket Diassign` | Assigned user | `Tiket "Laptop Rusak" telah diassign kepada Anda` |
+| Ticket Created | `Tiket Baru` | Admin only | `Tiket "Laptop Rusak" telah dibuat oleh User Demo.` |
+| Status Changed | `Status Tiket Diubah` | Ticket creator | `Status tiket "Laptop Rusak" berubah menjadi inprogress - Ditugaskan ke Helpdesk Demo` |
+| Ticket Assigned | `Tiket Diassign` | Assigned user (helpdesk) | `Tiket "Laptop Rusak" telah diassign kepada Anda untuk dikerjakan` |
+| Ticket Closed | `Tiket Selesai` | All admin | `Tiket "Laptop Rusak" telah selesai dikerjakan oleh Helpdesk Demo` |
+| New Comment | `Komentar Baru` | Ticket owner (if not the commenter) | `Tiket "Laptop Rusak" mendapat komentar baru` |
 
 ---
 
@@ -1179,17 +1383,18 @@ Each wraps the `SupabaseClient` and handles direct API calls.
 
 | Data Source | File | Key Methods |
 |-------------|------|-------------|
-| `SupabaseAuthDataSource` | `lib/data/datasources/supabase_auth_data_source.dart` | `login`, `register`, `logout`, `getCurrentUser` |
-| `SupabaseTicketDataSource` | `lib/data/datasources/supabase_ticket_data_source.dart` | `getTickets`, `getTicketById`, `createTicket`, `updateStatus`, `assignTicket`, `getStatistics`, `getHelpdeskUsers`, `addHistory` |
+| `SupabaseAuthDataSource` | `lib/data/datasources/supabase_auth_data_source.dart` | `login`, `register`, `logout`, `getCurrentUser`, `updateProfile`, `resetPassword` |
+| `SupabaseTicketDataSource` | `lib/data/datasources/supabase_ticket_data_source.dart` | `getTickets`, `getTicketById`, `createTicket`, `updateStatus`, `assignAndSetInProgress`, `updateAttachmentUrls`, `getStatistics`, `getHelpdeskUsers`, `getHistory`, `addHistory` |
 | `SupabaseCommentDataSource` | `lib/data/datasources/supabase_comment_data_source.dart` | `getComments`, `addComment` |
 | `SupabaseNotificationDataSource` | `lib/data/datasources/supabase_notification_data_source.dart` | `getNotifications`, `getUnreadCount`, `markAsRead`, `markAllAsRead` |
+| `SupabaseStorageDataSource` | `lib/data/datasources/supabase_storage_data_source.dart` | `uploadFiles`, `deleteFile` |
 
 ### 8.3 Repository Interfaces
 
 | Interface | File | Methods |
 |-----------|------|---------|
-| `AuthRepository` | `lib/domain/repositories/auth_repository.dart` | `login`, `register`, `logout`, `getCurrentUser` |
-| `TicketRepository` | `lib/domain/repositories/ticket_repository.dart` | `getTickets`, `getTicketById`, `createTicket`, `updateTicketStatus`, `assignTicket`, `getStatistics`, `getHelpdeskUsers` |
+| `AuthRepository` | `lib/domain/repositories/auth_repository.dart` | `login`, `register`, `logout`, `getCurrentUser`, `updateProfile`, `resetPassword` |
+| `TicketRepository` | `lib/domain/repositories/ticket_repository.dart` | `getTickets`, `getTicketById`, `createTicket`, `updateTicketStatus`, `assignTicket`, `updateAttachmentUrls`, `getStatistics`, `getHelpdeskUsers` |
 | `CommentRepository` | `lib/domain/repositories/comment_repository.dart` | `getComments`, `addComment` |
 | `NotificationRepository` | `lib/domain/repositories/notification_repository.dart` | `getNotifications`, `getUnreadCount`, `markAsRead`, `markAllAsRead` |
 
@@ -1203,11 +1408,14 @@ Each use case wraps a single repository method and follows the `call()` conventi
 | `RegisterUseCase` | `(username, password, fullName, email)` | `User` |
 | `LogoutUseCase` | `()` | `void` |
 | `GetCurrentUserUseCase` | `()` | `User?` |
-| `GetTicketsUseCase` | `({TicketStatus? statusFilter})` | `List<Ticket>` |
+| `UpdateProfileUseCase` | `(User user)` | `User` |
+| `ResetPasswordUseCase` | `(String newPassword)` | `void` |
+| `GetTicketsUseCase` | `({TicketStatus? statusFilter, int page, int pageSize})` | `List<Ticket>` |
 | `GetTicketByIdUseCase` | `(String id)` | `Ticket` |
 | `CreateTicketUseCase` | `(Ticket ticket)` | `Ticket` |
 | `UpdateTicketStatusUseCase` | `(String ticketId, TicketStatus newStatus)` | `Ticket` |
 | `AssignTicketUseCase` | `(String ticketId, String assigneeId)` | `Ticket` |
+| `UpdateAttachmentUrlsUseCase` | `(String ticketId, List<String> urls)` | `void` |
 | `GetStatisticsUseCase` | `({String? userId})` | `Map<String, int>` |
 | `GetHelpdeskUsersUseCase` | `()` | `List<User>` |
 | `GetCommentsUseCase` | `(String ticketId)` | `List<Comment>` |
@@ -1222,8 +1430,8 @@ Each use case wraps a single repository method and follows the `call()` conventi
 | Provider | State Held |
 |----------|------------|
 | `AuthProvider` | `currentUser`, `isLoading`, `error` |
-| `TicketProvider` | `tickets`, `statistics`, `isLoading`, `error` |
-| `NotificationProvider` | `notifications`, `unreadCount`, `isLoading` |
+| `TicketProvider` | `tickets`, `activeTickets`, `selectedTicket`, `statistics`, `helpdeskUsers`, `isLoading`, `isLoadingMore`, `hasMore`, `error` |
+| `NotificationProvider` | `notifications`, `unreadCount`, `isLoading`, `error` |
 
 ### 8.6 Dependency Injection (main.dart)
 
@@ -1234,12 +1442,15 @@ final authDataSource = SupabaseAuthDataSource(supabase);
 final ticketDataSource = SupabaseTicketDataSource(supabase);
 final commentDataSource = SupabaseCommentDataSource(supabase);
 final notificationDataSource = SupabaseNotificationDataSource(supabase);
+final storageDataSource = SupabaseStorageDataSource(supabase);
 
 final authRepo = AuthRepositoryImpl(authDataSource);
 final notificationRepo = NotificationRepositoryImpl(notificationDataSource);
 final ticketRepo = TicketRepositoryImpl(ticketDataSource, commentDataSource);
 final commentRepo = CommentRepositoryImpl(commentDataSource);
 ```
+
+All providers are registered via `MultiProvider` in `ETicketingApp.build()`, and `SupabaseStorageDataSource` is provided as a plain `Provider` for screens that need file upload capability.
 
 ---
 
@@ -1261,11 +1472,15 @@ final commentRepo = CommentRepositoryImpl(commentDataSource);
 
 #### "User cannot create tickets" (403)
 
-The user's role is not `user` (e.g., helpdesk or admin trying to insert a ticket). Only regular users can create tickets.
+The user's role is not `user`, `admin`, or `helpdesk`. All authenticated user roles can create tickets.
 
 #### "Cannot update ticket" (403)
 
-The user's role is not `helpdesk` or `admin`. Only staff can update ticket status and assignment.
+The user's role is not `helpdesk` or `admin`. Only staff can update tickets. Ticket creators can update their own tickets via the `tickets_update_own` policy.
+
+#### "Cannot assign ticket" (403)
+
+The user's role is not `admin`. Only admins can change the `assigned_to` column, enforced by the `check_assign_permission` database trigger.
 
 #### "Cannot view ticket" (404 or empty list)
 
